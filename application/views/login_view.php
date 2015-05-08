@@ -21,7 +21,7 @@
               height: 80px;
             }
         </style>
-<!--        <script>
+        <script>
             var options = {
                 dataType : "json",
                 beforeSubmit : function (){
@@ -30,13 +30,14 @@
                 },
                 success : function (result){
                     console.log(result);
-                    switch (result[0])
+                    switch (result['code'])
                     {
                         case 1:
-                            location.href='<?= base_url("index.php/ControlCenter")?>';
+                            location.href='<?= base_url("index.php/control_center")?>';
                             break;
                         default:
-                            alert(result[1]);
+                            alert(result['error']);
+                            break;
                     }                        
                     
                     $(".btn").html("登录");
@@ -45,7 +46,7 @@
             };
             
             $(".form-signin").ajaxForm(options);  
-        </script>-->
+        </script>
 </head>
 <body>
     <div class="col-sm-8 col-sm-offset-2">
@@ -55,7 +56,7 @@
         <div class="form-group">            
             <input type="text" name="WebUserNO" id="WebUserNO" class="form-control" placeholder="教务处用户名" required="" autofocus="">
             <input type="password" name="Password" id="Password" class="form-control" placeholder="教务处密码" required="">            
-            <input type="text" name="Agnomen" id="Agnomen" class="form-control col-lg-2" required="" placeholder="验证码"><img src="<?= base_url("index.php/index/getAgnomen") ?>" width="100">
+            <input type="text" name="Agnomen" id="Agnomen" class="form-control col-lg-2" required="" placeholder="验证码"><img id="Agnomen_img" src="<?= base_url("index.php/index/getAgnomen") ?>" width="100">
         </div>
         
         <br/>
@@ -64,7 +65,7 @@
     </div>
     <div class="footer">
       <div class="container">
-          <p class="text-muted">Project sut_score<br/>版权所有(C) 2015-<?= date('Y')?> 沈阳工业大学ACM实验室 沈阳工业大学网络管理中心 *Chen<br/>Released under the GPL V3.0 License</p>
+          <p class="text-muted"><a href="https://github.com/SUTFutureCoder/sut_score">Project sut_score</a><br/>版权所有(C) 2015-<?= date('Y')?> 沈阳工业大学ACM实验室 沈阳工业大学网络管理中心 *Chen<br/>Released under the GPL V3.0 License</p>
       </div>
     </div>
 </body>

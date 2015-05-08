@@ -37,7 +37,7 @@ class Index extends CI_Controller{
     //显示验证码
     public function getAgnomen(){
         $this->load->library('session');
-        $url = 'http://jwc.sut.edu.cn/ACTIONVALIDATERANDOMPICTURE.APPPROCESS';
+        $url = BASE_SCHOOL_URL . 'ACTIONVALIDATERANDOMPICTURE.APPPROCESS';
         
         $ch_cookie = curl_init();
         curl_setopt($ch_cookie, CURLOPT_URL, $url);
@@ -78,19 +78,14 @@ class Index extends CI_Controller{
             $clean['WebUserNO'] = $this->input->post('WebUserNO', TRUE);
         }
         
-        //从数据库中提取验证是否合法数据
-        //数据库中填写
-        
-        
         //cURL请求
-        $url = 'http://jwc.sut.edu.cn/ACTIONLOGON.APPPROCESS?mode=4';
+        $url = BASE_SCHOOL_URL . 'ACTIONLOGON.APPPROCESS?mode=4';
         $clean['Password'] = $this->input->post('Password', TRUE);
         $clean['Agnomen'] = $this->input->post('Agnomen', TRUE);
         
         $ch = curl_init();
         $postField = 'WebUserNO=' . $clean['WebUserNO'] . '&Password=' . $clean['Password'] . '&Agnomen=' . $clean['Agnomen'];
         curl_setopt($ch, CURLOPT_URL, $url);
-        $cookie = "JSESSIONID=VIswXYNsHPyLQb1pjgy35hg6huuGJ1agRXI9dy2OrChYFlv1JC6d";//设置cookie值，cookie过期则需要重新写入
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postField);
@@ -103,9 +98,15 @@ class Index extends CI_Controller{
         $result_array = array();
         $result_array = explode('<td align="left">', $result);
         $result_array = explode('</td>', $result_array[1]);
-//        echo $result_array[0];
-        //写入session
-        $this->session->set_userdata('user_name', $result_array[0]);
         
+        if (strstr($result_array[0], '<input')){
+            echo json_encode(array('code' => -1, 'error' => '抱歉，您的密码错误或输入错误的验证码'));
+            return 0;
+        }
+        
+        //写入session
+        $this->session->set_userdata('user_name', iconv('gb2312', 'utf-8//IGNORE', $result_array[0]));
+        $this->session->set_userdata('user_id', iconv('gb2312', 'utf-8//IGNORE', $clean['WebUserNO']));
+        echo json_encode(array('code' => 1));
     }
 }
