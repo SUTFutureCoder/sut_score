@@ -32,7 +32,6 @@ class Record extends CI_Controller{
         $this->load->library('authorizee');
         $this->load->model('record_model');
         
-        $reference = $this->record_model->getRule();
-        var_dump($reference);
+        $this->load->view('record_reference_view', array('rule' => $this->record_model->getRule()));
     }
 }

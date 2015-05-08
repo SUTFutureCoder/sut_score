@@ -32,22 +32,33 @@ class Fetch extends CI_Controller{
         $this->load->library('authorizee');
         set_time_limit(1800);
         header("Content-type:text/html;charset=utf-8");
+        echo '<p style="color:red">请注意，每年度评比前请使用本功能进行更新缓存操作<p>';
+        echo '<br/>';
+        echo '<p style="color:red">5秒钟后开始更新缓存<p>';
+        echo '<br/>';
+        ob_flush(); 
+        flush();
+        sleep(5);
         $class_list = array();
-        echo '正在获取学院/专业/班级基础信息,请稍候...';
+        echo '正在缓存学院/专业/班级基础信息,请稍候...';
+        echo '<br/>';
         ob_flush(); 
         flush();
         $class_list = $this->fetchSchoolMajorClassInfo();
-        echo '学院/专业/班级基础信息抓取完毕';
+        echo '学院/专业/班级基础信息获取完毕';
+        echo '<br/>';
         foreach ($class_list as $class_item){
             if ((int)(date('y')) > ((int)substr($class_item[0], 0, 2) + 5)){
                 continue;
             }
-            echo '正在抓取' . $class_item[0] . '-' . $class_item[1] . '信息';
+            echo '正在缓存' . $class_item[0] . '-' . $class_item[1] . '信息';
+            echo '<br/>';
             ob_flush(); 
             flush();
             $this->fetchStudentList($class_item[0]);
         }        
-        echo '全部信息抓取完毕';
+        echo '全部信息缓存完毕';
+        echo '<br/>';
         ob_flush(); 
         flush();
     }
@@ -165,6 +176,55 @@ class Fetch extends CI_Controller{
             );   
         }
         $this->fetch_model->fetchStudentList($data_array);
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  抓取全部学生平均绩点信息【测试用，不存库，随填随取】    
+     *  @Method Name:
+     *  fetchStudentAveragePoint()    
+     *  @Parameter: 
+     *  @Return: 
+     *  
+    */
+    public function fetchStudentAveragePoint(){
+        $this->load->library('session');
+        $this->load->model('fetch_model');
+        
+        //cURL请求
+        $url = BASE_SCHOOL_URL . 'ACTIONCLASSJDQUERY.APPPROCESS?mode=2&query=1&xuanzelei=总成绩';
+      
+        $ch = curl_init();
+        $postField = 'FirstYearTermNO=13&EndYearTermNO=14&xuanze=1&ClassNO=1204063';
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postField);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        $result = iconv('gb2312', 'utf-8//IGNORE', $result);
+        $result = explode("\n", strip_tags($result, '<td>'));
+        
+        $result_count = count($result) - 14;
+        $average_point = array();
+        $n = 0;
+        
+        for ($i = 84; $i < $result_count; $i++, $n++){
+            while (trim($result[$i]) == ''){
+                $i++;
+            }        
+            $average_point[$n]['student_id'] = $result[++$i];
+            $i += 6;
+            while (trim($result[$i]) == ''){
+                $i++;
+            }      
+            $average_point[$n]['average_point'] = $result[$i];
+            $i += 5;
+        }
+        
+        var_dump($average_point);
     }
     
 }

@@ -121,7 +121,7 @@ class Search extends CI_Controller{
     
     /**    
      *  @Purpose:    
-     *  获取班级学生列表信息[数据库]    
+     *  获取班级学生列表信息    
      *  @Method Name:
      *  getStudentList()    
      *  @Parameter: 
@@ -133,8 +133,62 @@ class Search extends CI_Controller{
     public function getStudentList(){
         $this->load->library('session');
         $this->load->library('authorizee');
-        $this->load->model('search');
-
+        
+        if (!$this->session->userdata('cookie')){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
+            return 0;
+        }
+        
+        //cURL请求
+        $url = BASE_SCHOOL_URL . 'ACTIONQUERYCLASSSTUDENT.APPPROCESS?mode=2&query=1';
+        
+        if (!$this->input->post('class_id', TRUE) || !ctype_digit((int)$this->input->post('class_id', TRUE))){
+            echo json_encode(array('code' => -2, 'message' => '请输入正确的班级号'));
+            return 0;
+        } else {
+            $clean['ClassNO'] = $this->input->post('class_id', TRUE);
+        }
+        
+        $ch = curl_init();
+        $postField = 'ClassNO=' . $clean['ClassNO'];
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postField);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        $result = iconv('gb2312', 'utf-8//IGNORE', $result);        
+        echo json_encode(array('code' => 1, 'data' => $result));
+        exit();
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  ajax获取专业列表[数据库]    
+     *  @Method Name:
+     *  ajaxGetMajorClassList()    
+     *  @Parameter: 
+     *  POST school_id  学院id
+     *  POST major_id   专业id
+     *  POST grade_id   年级id
+     *  @Return: 
+     *  
+    */
+    public function ajaxGetMajorClassList(){
+        $this->load->library('session');
+        $this->load->library('authorizee');
+        $this->load->model('search_model');
+        if (!$this->session->userdata('cookie')){
+            echo json_encode(array('您的会话已过期，请重新登录'));            
+            return 0;
+        }
+        
+        $class_list = array();
+        $class_list = $this->search_model->ajaxGetClassList($this->input->post('school_id', TRUE), $this->input->post('major_id', TRUE), $this->input->post('grade_id', TRUE));
+        echo json_encode($class_list);
     }
     
 }

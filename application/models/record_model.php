@@ -32,7 +32,7 @@ class Record_model extends CI_Model{
         $this->load->database();
         $query = $this->db->get('score_type');
         $rule_array = array();
-        foreach ($query->result() as $row){
+        foreach ($query->result_array() as $row){
             $rule_array[] = $row;
         }
         return $rule_array;

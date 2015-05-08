@@ -36,7 +36,7 @@
                         <div title="抓取查询">
                             <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudent') ?>" class="cs-navi-tab">学生信息查询</a></p>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudentList') ?>" class="cs-navi-tab">班级学生名单查询</a></p>
-                            <a href="javascript:void(0);" src="<?= base_url('index.php/search/updateStudentList') ?>" class="cs-navi-tab">全校名单抓取更新</a></p>
+                            <a href="javascript:void(0);" src="<?= base_url('index.php/fetch/fetchStudentBasicInfo') ?>" class="cs-navi-tab">全校名单缓存更新</a></p>
                         </div>
                     
                         <div title="权限相关">
