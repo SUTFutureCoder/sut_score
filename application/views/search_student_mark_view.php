@@ -37,8 +37,16 @@
 </head>
 <body>
     <br/>        
-    <form class="form-inline col-sm-offset-3" id='form_search' action="<?= base_url("index.php/search/getStudentInfo")?>" method="post">
-        <div class="form-group col-sm-6">
+    <form class="form-inline col-sm-offset-3" id='form_search' action="<?= base_url("index.php/search/getStudentMark")?>" method="post">
+        <div class="form-group col-sm-2">
+            <select class="form-control" name="term_id" id="term_id">
+                <option value="0">请选择学年</option>
+                <?php for ($i = date('Y'); $i >= BASIC_TERM_ID; $i--): ?>
+                    <option value="<?= ($i - BASIC_TERM_ID) * 2 + 1 ?>"><?php echo ($i . '-' . ($i + 1) . '学年') ?></option>
+                <?php endfor; ?>
+            </select>
+        </div>
+        <div class="form-group col-sm-5">
             <input type="text" class="form-control" name="student_id" id="student_id" placeholder="学号">
         </div>
         <button type="submit" class="btn btn-default">确定</button>

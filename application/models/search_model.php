@@ -142,4 +142,41 @@ class Search_model extends CI_Model{
         
         return $data;
     }
+    
+    /**    
+     *  @Purpose:    
+     *  获取学院或班级或姓名列表    
+     *  @Method Name:
+     *  ajaxGetStudentClassName($id)
+     *  @Parameter: 
+     *  int $id 位数判断是班级还是学生
+     *  @Return: 
+     *  array $data 班级数据
+    */
+    public function ajaxGetStudentClassName($id){
+        $this->load->database();
+        $data = array();
+        
+        if (strlen($id) == 7){
+            //班级
+            $this->db->where('class_id', $id);
+            $result = $this->db->get('class_info');
+        } 
+        
+        if (strlen($id) == 9){
+            //学生
+            $this->db->select('student.student_name');
+            $this->db->where('student.student_id', $id);
+            $this->db->from('student');
+            $this->db->select('class_info.class_name');
+            $this->db->join('class_info', 'class_info.class_id = student.student_class');
+            $result = $this->db->get();
+        }
+        
+        foreach ($result->result() as $value){
+            $data[] = $value;
+        }
+        
+        return $data;
+    }
 }

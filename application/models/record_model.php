@@ -37,4 +37,56 @@ class Record_model extends CI_Model{
         }
         return $rule_array;
     }
+    
+    /**    
+     *  @Purpose:    
+     *  获取规章制度列表
+     *     
+     *  @Method Name:
+     *  getRuleList($type)
+     *  @Parameter: 
+     *  char $type d/z/w
+     *  @Return: 
+     *  array 规章制度项目数组
+    */
+    public function getRuleList($type){
+        $this->load->database();
+
+        $this->db->select('score_type_id, score_type_content');
+        $this->db->like('score_type_id', $type, 'after');
+        $query = $this->db->get('score_type');
+        $rule_array = array();
+        foreach ($query->result_array() as $row){
+            $rule_array[] = $row;
+        }
+        
+        return $rule_array;
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  获取规则细节    
+     *  @Method Name:
+     *  ajajaxGetRuleDetail($score_type_id)  
+     *  @Parameter: 
+     *  char(7) score_type_id  规则id
+     * 
+     *  @Return: 
+     *  
+    */
+    public function ajaxGetRuleDetail($score_type_id){
+        $this->load->database();
+        $this->db->where('score_type_id', $score_type_id);
+        $query = $this->db->get('score_type');
+        $rule_detail_array = array();
+        foreach ($query->result_array() as $row){
+            $rule_detail_array[] = $row;
+        }
+                
+        if (isset($rule_detail_array[0]['score_type_content'])){
+            $rule_detail_array[0]['score_type_comment'] = nl2br($rule_detail_array[0]['score_type_comment']);
+        }
+        
+        return $rule_detail_array;
+    }
 }

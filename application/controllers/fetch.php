@@ -34,11 +34,11 @@ class Fetch extends CI_Controller{
         header("Content-type:text/html;charset=utf-8");
         echo '<p style="color:red">请注意，每年度评比前请使用本功能进行更新缓存操作<p>';
         echo '<br/>';
-        echo '<p style="color:red">5秒钟后开始更新缓存<p>';
+        echo '<p style="color:red">10秒钟后开始更新缓存,您可以关闭本标签页以停止缓存<p>';
         echo '<br/>';
         ob_flush(); 
         flush();
-        sleep(5);
+        sleep(10);
         $class_list = array();
         echo '正在缓存学院/专业/班级基础信息,请稍候...';
         echo '<br/>';

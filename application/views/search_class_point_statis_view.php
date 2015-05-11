@@ -10,6 +10,13 @@
     <div class="col-sm-12">
     <form class="form-horizontal col-sm-10 col-sm-offset-1" id='form_search'>
         <div class="form-group">
+            <select class="form-control" id="form_search_term">
+                <option value="0">请选择学年</option>
+                <?php for ($i = date('Y'); $i >= BASIC_TERM_ID; $i--): ?>
+                    <option value="<?= ($i - BASIC_TERM_ID) * 2 + 1 ?>"><?php echo ($i . '-' . ($i + 1) . '学年') ?></option>
+                <?php endfor; ?>
+            </select>
+            <br/>
             <select class="form-control" onchange="updateList('school')" id="form_search_school">
                 <option value="00">全部学院</option>
                 <?php foreach ($school_list as $value): ?>
@@ -38,7 +45,7 @@
                 <?php endforeach ;?>
             </select>
         </div>
-        <button class="form-control btn btn-primary" onclick="getStudentList()">查询</button>
+        <button class="form-control btn btn-primary" onclick="getClassPointStatis()">查询</button>
     </form>
     </div>    
     <div class="col-sm-12" id='result'>
@@ -76,32 +83,40 @@
             )
         }
 
-        function getStudentList(){
+        function getClassPointStatis(){
             if ($("#form_search_class").val() == '0000'){
                 alert('请选择班级进行查询');
-            } else {
-                $(".btn").html("正在提交中，请稍后").attr("disabled", "disabled");
-                $.post(
-                    '<?= base_url('index.php/search/getStudentList')?>',
+                return 0;
+            } 
+            
+            if ($("#form_search_term").val() == '0'){
+                alert('请选择学年进行查询');
+                return 0;
+            } 
+            
+            $(".btn").html("正在提交中，请稍后").attr("disabled", "disabled");
+            $.post(
+                '<?= base_url('index.php/search/getClassPointStatis')?>',
+                {
+                    term_id : $('#form_search_term').val(),
+                    class_id : $("#form_search_class").val()
+                },
+                function (data){
+                    $(".btn").html("查询").removeAttr("disabled");
+                    var data = JSON.parse(data);
+                    switch (data['code'])
                     {
-                        class_id : $("#form_search_class").val()
-                    },
-                    function (data){
-                        $(".btn").html("查询").removeAttr("disabled");
-                        var data = JSON.parse(data);
-                        switch (data['code'])
-                        {
-                            case 1:
-                                $("#result").html('<hr>' + data['data'] + '<br/>');
-                                break;
-                            default:
-                                alert(data['message']);
-                                break;
-                        }                        
-                    }
-                )
-            }
+                        case 1:
+                            $("#result").html('<hr>' + data['data'] + '<br/>');
+                            break;
+                        default:
+                            alert(data['message']);
+                            break;
+                    }                        
+                }
+            )
         }
+        
         </script>
 </body>
 </html>

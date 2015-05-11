@@ -27,15 +27,17 @@
                 <div class="easyui-accordion" fit="true" border="false">
 
                         <div title="记录管理">
-                            <a href="javascript:void(0);" src="<?= base_url('index.php/admin_add_act') ?>" class="cs-navi-tab">德育</a></p>
-                            <a href="javascript:void(0);" src="index.php/changepass" class="cs-navi-tab">智育</a></p>
-                            <a href="javascript:void(0);" src="index.php/changepass" class="cs-navi-tab">文体</a></p>
+                            <a href="javascript:void(0);" src="<?= base_url('index.php/record/showRecordD') ?>" class="cs-navi-tab">德育</a></p>
+                            <a href="javascript:void(0);" src="<?= base_url('index.php/record/showRecordZ') ?>" class="cs-navi-tab">智育</a></p>
+                            <a href="javascript:void(0);" src="<?= base_url('index.php/record/showRecordW') ?>" class="cs-navi-tab">文体</a></p>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/record/getReference') ?>" class="cs-navi-tab">规则参考</a></p>
                         </div>
 
                         <div title="抓取查询">
                             <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudent') ?>" class="cs-navi-tab">学生信息查询</a></p>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudentList') ?>" class="cs-navi-tab">班级学生名单查询</a></p>
+                            <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchClassPoint') ?>" class="cs-navi-tab">班级绩点统计</a></p>
+                            <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudentMark') ?>" class="cs-navi-tab">学生成绩查询</a></p>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/fetch/fetchStudentBasicInfo') ?>" class="cs-navi-tab">全校名单缓存更新</a></p>
                         </div>
                     
