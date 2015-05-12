@@ -33,6 +33,7 @@ define('BASIC_TERM_ID', '2008');
 */
 define('ORIGIN_GRADE', '2010');
 
+
 /*
 |--------------------------------------------------------------------------
 | File and Directory Modes

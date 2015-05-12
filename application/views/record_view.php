@@ -45,6 +45,12 @@
             </div>
         </div>
         <div class="form-group">
+            <label for="event_title" class="col-sm-2 control-label">标签</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" placeholder="例：ACM程序设计大赛亚洲区预选赛金奖" id="event_title">
+            </div>
+        </div>
+        <div class="form-group">
             <label for="event_intro" class="col-sm-2 control-label">说明</label>
             <div class="col-sm-10">
                 <textarea class="form-control" rows="5" id="event_intro"></textarea>
@@ -56,17 +62,25 @@
                 <input type="text" class="form-control" id="event_certify">
             </div>
         </div>
+    </form>
+    <form action="<?= base_url('index.php/record/ajaxFileUpload')?>" class="form-horizontal col-sm-10" id="form1" name="form1" encType="multipart/form-data"  method="post" target="file_frame">
         <div class="form-group">
             <label for="event_certify_file" class="col-sm-2 control-label">证明材料</label>
-            <div class="col-sm-10">
-                <input type="text" class="form-control" id="event_certify_file">
+            <div class="col-sm-9">
+                <input type="hidden" hidden="hidden" class="form-control" name="certify_class_user_id" id="certify_class_user_id">
+                <input type="hidden" hidden="hidden" class="form-control" name="certify_rule_id" id="certify_rule_id">
+                <input type="hidden" hidden="hidden" class="form-control" name="certify_file_info" id="certify_file_info">
+                <input type="file" class="form-control" id="event_certify_file" name="file">
             </div>
+            <button class="btn btn-primary" type="submit">上传</button>
         </div>
     </form>
+    <iframe name='file_frame' id="file_frame" style='display:none'></iframe>
     <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
     <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="<?= base_url('js/json.js')?>"></script>
     <script type="text/javascript" src="<?= base_url('js/jquery.form.js')?>"></script>        
+    <script type="text/javascript" src="<?= base_url('js/ajaxfileupload.js')?>"></script>        
     <script>
     var score_min = 0.0;
     var score_max = 0.0;
@@ -84,6 +98,7 @@
                     {
                         case 1:
                             if (undefined != data['data'][0]){
+                                $("#certify_class_user_id").val(value);
                                 if (undefined != data['data'][0]['student_name']){
                                     $("#student_class_info").html(data['data'][0]['student_name'] + '-' + data['data'][0]['class_name']);
                                 } else {
@@ -115,6 +130,7 @@
                     case 1:
                         //写入两个地方well和计分参考处
                         if (undefined != data['data'][0]){
+                            $("#certify_rule_id").val(value);
                             score_max = data['data'][0]['score_max'];
                             score_min = data['data'][0]['score_min'];
                             score_mod = data['data'][0]['score_mod'];
@@ -157,6 +173,7 @@
             $("#score_judge").focus();
         }
     }
+    
     </script>
 </body>
 </html>

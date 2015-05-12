@@ -38,6 +38,7 @@
                             <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudentList') ?>" class="cs-navi-tab">班级学生名单查询</a></p>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchClassPoint') ?>" class="cs-navi-tab">班级绩点统计</a></p>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudentMark') ?>" class="cs-navi-tab">学生成绩查询</a></p>
+                            <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudentMark') ?>" class="cs-navi-tab">竞赛时间数据挖掘</a></p>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/fetch/fetchStudentBasicInfo') ?>" class="cs-navi-tab">全校名单缓存更新</a></p>
                         </div>
                     
