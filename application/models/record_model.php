@@ -89,4 +89,23 @@ class Record_model extends CI_Model{
         
         return $rule_detail_array;
     }
+    
+    /**    
+     *  @Purpose:    
+     *  添加记录
+     *  @Method Name:
+     *  setScoreLog($data)
+     *  @Parameter: 
+     *  array $data 记录数组
+     * 
+     *  @Return: 
+     *  0 添加失败
+     *  1 添加成功
+    */
+    public function setScoreLog($data){
+        $this->load->database();
+        $this->db->insert('score_log', $data);
+        
+        return $this->db->affected_rows();
+    }
 }

@@ -152,7 +152,7 @@ class Record extends CI_Controller{
             mkdir(BASEPATH . '../upload/' . date('Ym') . '/');
         }
         
-        if (move_uploaded_file($_FILES['file']['tmp_name'], $file_name)) {
+        if (move_uploaded_file($_FILES['file']['tmp_name'], $uploaddir . $file_name)) {
             echo <<<FILESUCCESS
             <script>
                 alert("文件上传成功");
@@ -194,5 +194,105 @@ FILESUCCESS;
         
         echo json_encode(array('code' => 1, 'data' => $_FILES['file']));
         return 0;
+    }
+    
+    
+    /**    
+     *  @Purpose:    
+     *  添加记录    
+     *  @Method Name:
+     *  setScoreLog()    
+     *  @Parameter: 
+     *  POST class_student_id           班级或学生id
+     *  POST score_type_id              项目id
+     *  POST score_mod                  + / -
+     *  POST score_log_judge            分数
+     *  POST score_log_event_time       项目发生时间
+     *  POST score_log_event_tag        项目标签
+     *  POST score_log_event_intro      项目介绍
+     *  POST score_log_event_certify    项目证明单位
+     *  POST score_log_event_file       项目证明文件路径
+     * 
+     *  @Return: 
+     *  
+    */
+    public function setScoreLog(){
+        $this->load->library('session');
+        $this->load->model('record_model');
+        if (!$this->session->userdata('cookie')){
+            echo json_encode(array('code' => -2, 'message' => '抱歉，您的权限不足或登录信息已过期,请重新登录'));
+            return 0;
+        }
+        $data = array();
+        
+        if (!$this->input->post('class_student_id', TRUE) || !ctype_digit($this->input->post('class_student_id', TRUE)) || strlen($this->input->post('class_student_id', TRUE)) > 9){
+            echo json_encode(array('code' => -3, 'message' => '班级或学生id必须为数字', 'id' => 'student_class_id'));
+            return 0;
+        } else {
+            $data['class_student_id'] = $this->input->post('class_student_id', TRUE);
+        }
+        
+        if (!$this->input->post('score_type_id', TRUE) || strlen($this->input->post('score_type_id', TRUE)) > 8){
+            echo json_encode(array('code' => -3, 'message' => '请选择正确的项目', 'id' => 'rule_item'));
+            return 0;
+        } else {
+            $data['score_type_id'] = $this->input->post('score_type_id', TRUE);
+        }
+        
+        if (!$this->input->post('score_log_judge', TRUE) || !is_numeric($this->input->post('score_log_judge', TRUE))){
+            echo json_encode(array('code' => -3, 'message' => '请选择数字分数', 'id' => 'score_judge'));
+            return 0;
+        } else {
+            $data['score_log_judge'] = (float)$this->input->post('score_log_judge', TRUE) * (int)(($this->input->post('score_mod', TRUE)) . 1);
+        }
+        
+        if (!$this->input->post('score_log_event_time', TRUE) || !preg_match('/\d\d\d\d-[0-1]?[1-9]-[0-3]?[0-9]/', $this->input->post('score_log_event_time', TRUE))){
+            echo json_encode(array('code' => -3, 'message' => '请输入正确的时间，例：2015-05-12', 'id' => 'event_time'));
+            return 0;
+        } else {
+            $data['score_log_event_time'] = $this->input->post('score_log_event_time', TRUE);
+        }
+        
+        if (!$this->input->post('score_log_event_tag', TRUE) || mb_strlen($this->input->post('score_log_event_tag', TRUE)) > 40){
+            echo json_encode(array('code' => -3, 'message' => '标签不能为空或超过40个字符', 'id' => 'event_tag'));
+            return 0;
+        } else {
+            $data['score_log_event_tag'] = $this->input->post('score_log_event_tag', TRUE);
+        }
+        
+        if (!$this->input->post('score_log_event_intro', TRUE) || mb_strlen($this->input->post('score_log_event_intro', TRUE)) > 500){
+            echo json_encode(array('code' => -3, 'message' => '说明不能为空或超过500个字符', 'id' => 'event_intro'));
+            return 0;
+        } else {
+            $data['score_log_event_intro'] = $this->input->post('score_log_event_intro', TRUE);
+        }
+            
+        if (!$this->input->post('score_log_event_certify', TRUE) || mb_strlen($this->input->post('score_log_event_certify', TRUE)) > 40){
+            echo json_encode(array('code' => -3, 'message' => '证明人不能为空或超过40个字符', 'id' => 'event_certify'));
+            return 0;
+        } else {
+            $data['score_log_event_certify'] = $this->input->post('score_log_event_certify', TRUE);
+        }
+        
+        if ($this->input->post('score_log_event_file', TRUE) && mb_strlen($this->input->post('score_log_event_file', TRUE)) > 100){
+            echo json_encode(array('code' => -3, 'message' => '请您精简文件名到80个字符以内', 'id' => 'certify_file_info'));
+            return 0;
+        } else {
+            $data['score_log_event_file'] = $this->input->post('score_log_event_file', TRUE);
+        }
+        
+        //添加额外信息
+        $data['score_log_add_time'] = date('Y-m-d H:i:s');
+        $data['teacher_id'] = $this->session->userdata('user_id');
+        
+        if ($this->record_model->setScoreLog($data)){
+            echo json_encode(array('code' => 1));
+            return 0;
+        } else {
+            echo json_encode(array('code' => 2, 'message' => '插入数据失败，请联系管理员'));
+            return 0;   
+        }
+        
+        
     }
 }

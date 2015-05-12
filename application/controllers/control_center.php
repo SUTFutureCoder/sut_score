@@ -19,6 +19,12 @@ class Control_center extends CI_Controller{
     
     public function index(){
         $this->load->library('session');
+        if (!$this->session->userdata('cookie')){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.location.href="' . base_url() . '";</script>';            
+            return 0;
+        }
+        
         $this->load->view('control_center_view', array('user_name' => $this->session->userdata('user_name')));
     }
 }

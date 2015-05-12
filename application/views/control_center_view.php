@@ -71,5 +71,10 @@
 		<div id="mm-tabcloseother">关闭其他</div>
 		<div id="mm-tabcloseall">关闭全部</div>
 	</div>
+    <script>
+        $(function(){
+            $(".layout-split-proxy-h").css('left', '200px');
+        })
+    </script>
 </body>
 </html>
