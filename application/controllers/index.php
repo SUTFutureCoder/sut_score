@@ -69,7 +69,9 @@ class Index extends CI_Controller{
     */
     public function PassCheck(){
         $this->load->library('session');
+        $this->load->library('encrypt');
         $this->load->model('user_model');
+        
         $clean = array();
         if (!$this->input->post('WebUserNO', TRUE) || !ctype_digit($this->input->post('WebUserNO', TRUE))){
             echo json_encode(array('code' => -1, 'error' => '抱歉，您的教务处账号不合法'));
@@ -105,6 +107,10 @@ class Index extends CI_Controller{
         }
         
         //写入session
+        $clean['teacher_name'] = htmlentities(iconv('gb2312', 'utf-8//IGNORE', $result_array[0]), ENT_QUOTES);
+        $clean['teacher_id'] = htmlentities(iconv('gb2312', 'utf-8//IGNORE', $clean['WebUserNO']), ENT_QUOTES);
+        $clean['teacher_password'] = $this->encrypt->encode($clean['Password']);
+        
         $this->session->set_userdata('user_name', iconv('gb2312', 'utf-8//IGNORE', $result_array[0]));
         $this->session->set_userdata('user_id', iconv('gb2312', 'utf-8//IGNORE', $clean['WebUserNO']));
         echo json_encode(array('code' => 1));

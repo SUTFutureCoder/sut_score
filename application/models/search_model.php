@@ -179,4 +179,31 @@ class Search_model extends CI_Model{
         
         return $data;
     }
+    
+    /**    
+     *  @Purpose:    
+     *  获取学生班级id    
+     *  @Method Name:
+     *  getStudentClassId($student_id)
+     *  @Parameter: 
+     *  int $student_id 学生id
+     *  @Return: 
+     *  int $data 班级id
+    */
+    public function getStudentClassId($student_id){
+        $this->load->database();
+
+        $this->db->where('student_id', $student_id);
+        $this->db->select('student_class');
+        $result = $this->db->get('student');
+        
+        if ($result->num_rows() > 0)
+        {
+            $data = $result->row(0, 'array'); 
+        } else {
+            $data['student_class'] = 0;
+        }
+        
+        return $data['student_class'];
+    }
 }

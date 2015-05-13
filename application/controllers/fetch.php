@@ -215,12 +215,12 @@ class Fetch extends CI_Controller{
             while (trim($result[$i]) == ''){
                 $i++;
             }        
-            $average_point[$n]['student_id'] = $result[++$i];
+            $average_point[$n]['student_id'] = trim($result[++$i]);
             $i += 6;
             while (trim($result[$i]) == ''){
                 $i++;
             }      
-            $average_point[$n]['average_point'] = $result[$i];
+            $average_point[$n]['average_point'] = trim($result[$i]);
             $i += 5;
         }
         

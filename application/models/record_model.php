@@ -108,4 +108,42 @@ class Record_model extends CI_Model{
         
         return $this->db->affected_rows();
     }
+    
+    /**    
+     *  @Purpose:    
+     *  获取学生分数记录
+     *  @Method Name:
+     *  getStudentScoreList($start_term, $student_id)
+     *  @Parameter: 
+     *  int $start_term 开始学期
+     *  int $student_id 学生id
+     * 
+     *  @Return: 
+     *  0 添加失败
+     *  1 添加成功
+    */
+    public function getStudentScoreList($start_term, $student_id){
+        $this->load->database();
+        $this->db->select('score_log.score_log_judge, score_log.score_log_event_tag, score_log.score_type_id,'
+                . 'score_log.score_log_add_time, score_log.score_log_event_time, '
+                . 'score_log.score_log_event_intro, score_log.score_log_event_certify, '
+                . 'score_log.score_log_event_file, score_log.score_log_valid, teacher.teacher_name, score_type.score_type_content');
+        $this->db->where('score_log.class_student_id', $student_id);
+        $data = array();
+        
+        $start_time = $start_term . '-09-01';
+        $end_time   = $start_term + 1 . '-08-31';
+        $this->db->where('score_log.score_log_event_time >=', $start_time);
+        $this->db->where('score_log.score_log_event_time <=', $end_time);
+        
+        $this->db->order_by('score_log.score_type_id asc, score_log.score_log_event_time asc');
+        $this->db->from('score_log');
+        $this->db->join('score_type', 'score_type.score_type_id = score_log.score_type_id');
+        $this->db->join('teacher', 'teacher.teacher_id = score_log.teacher_id');
+        $result = $this->db->get();
+        foreach ($result->result_array() as $value){
+            $data[] = $value;
+        }
+        return $data;
+    }
 }

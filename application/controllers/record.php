@@ -199,100 +199,158 @@ FILESUCCESS;
     
     /**    
      *  @Purpose:    
-     *  添加记录    
+     *  查询记录    
      *  @Method Name:
-     *  setScoreLog()    
+     *  showGetScoreLog()    
      *  @Parameter: 
-     *  POST class_student_id           班级或学生id
-     *  POST score_type_id              项目id
-     *  POST score_mod                  + / -
-     *  POST score_log_judge            分数
-     *  POST score_log_event_time       项目发生时间
-     *  POST score_log_event_tag        项目标签
-     *  POST score_log_event_intro      项目介绍
-     *  POST score_log_event_certify    项目证明单位
-     *  POST score_log_event_file       项目证明文件路径
-     * 
      *  @Return: 
      *  
     */
-    public function setScoreLog(){
+    public function showGetScoreLog(){
         $this->load->library('session');
-        $this->load->model('record_model');
+        $this->load->model('search_model');
         if (!$this->session->userdata('cookie')){
             echo json_encode(array('code' => -2, 'message' => '抱歉，您的权限不足或登录信息已过期,请重新登录'));
             return 0;
         }
-        $data = array();
         
-        if (!$this->input->post('class_student_id', TRUE) || !ctype_digit($this->input->post('class_student_id', TRUE)) || strlen($this->input->post('class_student_id', TRUE)) > 9){
-            echo json_encode(array('code' => -3, 'message' => '班级或学生id必须为数字', 'id' => 'student_class_id'));
+        $school_list = array();
+        $school_list = $this->search_model->getSchoolList();
+        
+        $major_list = array();
+        $major_list = $this->search_model->getMajorList();
+        
+        $class_list = array();
+        $class_list = $this->search_model->getClassList();
+        
+        $this->load->view('record_score_log_view', array('school_list' => $school_list, 'major_list' => $major_list, 'class_list' => $class_list));
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  查询学生记录列表    
+     *  @Method Name:
+     *  getStudentScoreLogList()    
+     *  @Parameter: 
+     *  POST student_term_id    学年id
+     *  POST student_id         学号
+     *  @Return: 
+     *  
+    */
+    public function getStudentScoreLogList(){
+        $this->load->library('session');
+        $this->load->library('authorizee');
+        $this->load->model('search_model');
+        $this->load->model('record_model');
+        
+        if (!$this->session->userdata('cookie')){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
             return 0;
-        } else {
-            $data['class_student_id'] = $this->input->post('class_student_id', TRUE);
         }
         
-        if (!$this->input->post('score_type_id', TRUE) || strlen($this->input->post('score_type_id', TRUE)) > 8){
-            echo json_encode(array('code' => -3, 'message' => '请选择正确的项目', 'id' => 'rule_item'));
+        if (!$this->input->post('student_term_id', TRUE) || !ctype_digit($this->input->post('student_term_id', TRUE))){
+            echo json_encode(array('code' => -2, 'message' => '请选择正确的起始学期'));
             return 0;
         } else {
-            $data['score_type_id'] = $this->input->post('score_type_id', TRUE);
+            $clean['YearTermNO'] = $this->input->post('student_term_id', TRUE);
         }
         
-        if (!$this->input->post('score_log_judge', TRUE) || !is_numeric($this->input->post('score_log_judge', TRUE))){
-            echo json_encode(array('code' => -3, 'message' => '请选择数字分数', 'id' => 'score_judge'));
+        $clean['EndYearTermNO'] = (int)$clean['YearTermNO'] + 1;
+        
+        if (!$this->input->post('student_id', TRUE)){
+            echo json_encode(array('code' => -2, 'message' => '请输入正确的学号'));
             return 0;
         } else {
-            $data['score_log_judge'] = (float)$this->input->post('score_log_judge', TRUE) * (int)(($this->input->post('score_mod', TRUE)) . 1);
+            $clean['ByStudentNO'] = $this->input->post('student_id', TRUE);
         }
         
-        if (!$this->input->post('score_log_event_time', TRUE) || !preg_match('/\d\d\d\d-[0-1]?[1-9]-[0-3]?[0-9]/', $this->input->post('score_log_event_time', TRUE))){
-            echo json_encode(array('code' => -3, 'message' => '请输入正确的时间，例：2015-05-12', 'id' => 'event_time'));
+        $class = $this->search_model->getStudentClassId($clean['ByStudentNO']);
+        
+        if (!$class){
+            echo json_encode(array('code' => -3, 'message' => '抱歉，未找到此学生'));
             return 0;
-        } else {
-            $data['score_log_event_time'] = $this->input->post('score_log_event_time', TRUE);
         }
         
-        if (!$this->input->post('score_log_event_tag', TRUE) || mb_strlen($this->input->post('score_log_event_tag', TRUE)) > 40){
-            echo json_encode(array('code' => -3, 'message' => '标签不能为空或超过40个字符', 'id' => 'event_tag'));
-            return 0;
-        } else {
-            $data['score_log_event_tag'] = $this->input->post('score_log_event_tag', TRUE);
+        //cURL请求
+        $url = BASE_SCHOOL_URL . 'ACTIONCLASSJDQUERY.APPPROCESS?mode=2&query=1&xuanzelei=总成绩';
+      
+        $ch = curl_init();
+        $postField = 'FirstYearTermNO=' . $clean['YearTermNO'] . '&EndYearTermNO=' . $clean['EndYearTermNO'] . '&xuanze=1&ClassNO=' . $class;
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postField);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        $result = iconv('gb2312', 'utf-8//IGNORE', $result);
+        $result = explode("\n", strip_tags($result));
+        
+        
+        $result_count = count($result) - 14;
+        $average_point = array();
+        $n = 0;
+        
+        for ($i = 84; $i < $result_count; $i++, $n++){
+            while (trim($result[$i]) == ''){
+                $i++;
+            }        
+            if (trim($result[++$i]) == $clean['ByStudentNO']){
+                $i += 6;
+                while (trim($result[$i]) == ''){
+                    $i++;
+                }      
+                //记录平均绩点
+                $student_point = trim($result[$i]);
+                //计算绩点对应智育基础分    60+(x-2.0)/0.2
+                $z_basic_score = (60 + ($student_point - 2.0) / 0.2) * 0.7;
+                break;
+            } else {
+                $i += 7;
+                while (trim($result[$i]) == ''){
+                    $i++;
+                }      
+                $i += 5;
+            }
         }
         
-        if (!$this->input->post('score_log_event_intro', TRUE) || mb_strlen($this->input->post('score_log_event_intro', TRUE)) > 500){
-            echo json_encode(array('code' => -3, 'message' => '说明不能为空或超过500个字符', 'id' => 'event_intro'));
-            return 0;
-        } else {
-            $data['score_log_event_intro'] = $this->input->post('score_log_event_intro', TRUE);
+        //还原真实查询起始年份($i - BASIC_TERM_ID) * 2 + 1
+        $term_year = ($this->input->post('student_term_id', TRUE) - 1) / 2 + BASIC_TERM_ID;
+        $data = $this->record_model->getStudentScoreList($term_year, $clean['ByStudentNO']);
+        $data[] = array(
+            'score_type_id' => 'z_1_1_1',
+            'score_log_judge' => $z_basic_score,
+            'score_type_content' => '智育基础分',
+            'score_log_add_time' => date('Y-m-d H:i:s'),
+            'score_log_event_time' => $term_year . '-' . ($term_year + 1) . '年度',
+            'score_log_event_intro' => '',
+            'score_log_event_certify' => '教务处',
+            'score_log_event_file' => '',
+            'score_log_valid' => 1,
+            'teacher_name' => '自动获取',
+        );
+        $sum = 0.000;
+        $d_sum = 0.000;
+        $z_sum = 0.000;
+        $w_sum = 0.000;
+        foreach ($data as $item){
+            $sum += $item['score_log_judge'];
+            switch ($item['score_type_id'][0]){
+                case 'd':
+                    $d_sum += $item['score_log_judge'];
+                    break;
+                case 'w':
+                    $w_sum += $item['score_log_judge'];
+                    break;
+                case 'z':
+                    $z_sum += $item['score_log_judge'];
+                    break;
+            }
         }
-            
-        if (!$this->input->post('score_log_event_certify', TRUE) || mb_strlen($this->input->post('score_log_event_certify', TRUE)) > 40){
-            echo json_encode(array('code' => -3, 'message' => '证明人不能为空或超过40个字符', 'id' => 'event_certify'));
-            return 0;
-        } else {
-            $data['score_log_event_certify'] = $this->input->post('score_log_event_certify', TRUE);
-        }
         
-        if ($this->input->post('score_log_event_file', TRUE) && mb_strlen($this->input->post('score_log_event_file', TRUE)) > 100){
-            echo json_encode(array('code' => -3, 'message' => '请您精简文件名到80个字符以内', 'id' => 'certify_file_info'));
-            return 0;
-        } else {
-            $data['score_log_event_file'] = $this->input->post('score_log_event_file', TRUE);
-        }
-        
-        //添加额外信息
-        $data['score_log_add_time'] = date('Y-m-d H:i:s');
-        $data['teacher_id'] = $this->session->userdata('user_id');
-        
-        if ($this->record_model->setScoreLog($data)){
-            echo json_encode(array('code' => 1));
-            return 0;
-        } else {
-            echo json_encode(array('code' => 2, 'message' => '插入数据失败，请联系管理员'));
-            return 0;   
-        }
-        
-        
+        echo $d_sum;
+        echo $w_sum;
+        echo $z_sum;
     }
 }

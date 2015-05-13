@@ -47,7 +47,7 @@
         <div class="form-group">
             <label for="event_tag" class="col-sm-2 control-label">标签</label>
             <div class="col-sm-10">
-                <input type="text" class="form-control" placeholder="例：ACM程序设计大赛亚洲区预选赛金奖" id="event_tag">
+                <input type="text" class="form-control" placeholder="例：ACM程序设计大赛 请填写关键字以用于同项高计" id="event_tag">
             </div>
         </div>
         <div class="form-group">

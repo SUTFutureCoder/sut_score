@@ -162,7 +162,7 @@ class Search extends CI_Controller{
         curl_close($ch);
         $result = iconv('gb2312', 'utf-8//IGNORE', $result);        
         echo json_encode(array('code' => 1, 'data' => $result));
-        exit();
+        return 0;
     }
     
     /**    
@@ -182,8 +182,7 @@ class Search extends CI_Controller{
         $this->load->library('authorizee');
         $this->load->model('search_model');
         if (!$this->session->userdata('cookie')){
-            echo json_encode(array('您的会话已过期，请重新登录'));            
-            return 0;
+            json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
         }
         
         $class_list = array();
@@ -244,8 +243,7 @@ class Search extends CI_Controller{
         $this->load->library('authorizee');
         
         if (!$this->session->userdata('cookie')){
-            header("Content-type: text/html; charset=utf-8");
-            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
+            echo json_encode(array('code' => -1, 'message' => '您的会话数据已过期，请重新登录'));
             return 0;
         }
         
@@ -286,6 +284,121 @@ class Search extends CI_Controller{
     
     /**    
      *  @Purpose:    
+     *  显示查询学生平均绩点界面    
+     *  @Method Name:
+     *  showSearchStudentPoint()    
+     *  @Parameter: 
+     *     
+     *  @Return: 
+     *  
+    */
+    public function showSearchStudentPoint(){
+        $this->load->library('session');
+        $this->load->library('authorizee');
+        
+//        if (!$this->session->userdata('cookie') || !$this->authorizee->CheckAuthorizee($this->session->userdata('user_role'), 'showSearchStudent')){
+        if (!$this->session->userdata('cookie')){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
+            return 0;
+        }
+        
+        $this->load->view('search_student_point_view');
+    }
+    
+    
+    /**    
+     *  @Purpose:    
+     *  获取学生平均绩点    
+     *  @Method Name:
+     *  getStudentPoint()    
+     *  @Parameter: 
+     *  POST student_id  学生id
+     * 
+     *  @Return: 
+     *  
+    */
+    public function getStudentPoint(){
+        $this->load->library('session');
+        $this->load->library('authorizee');
+        $this->load->model('search_model');
+        
+        if (!$this->session->userdata('cookie')){
+            echo json_encode(array('code' => -2, 'message' => '抱歉，您的权限不足或登录信息已过期'));
+            return 0;
+        }
+        
+        if (!$this->input->post('term_id', TRUE) || !ctype_digit($this->input->post('term_id', TRUE))){
+            echo json_encode(array('code' => -2, 'message' => '请选择正确的起始学期'));
+            return 0;
+        } else {
+            $clean['YearTermNO'] = $this->input->post('term_id', TRUE);
+        }
+        
+        $clean['EndYearTermNO'] = (int)$clean['YearTermNO'] + 1;
+        
+        if (!$this->input->post('student_id', TRUE)){
+            echo json_encode(array('code' => -2, 'message' => '请输入正确的学号'));
+            return 0;
+        } else {
+            $clean['ByStudentNO'] = $this->input->post('student_id', TRUE);
+        }
+        
+        $class = $this->search_model->getStudentClassId($clean['ByStudentNO']);
+        
+        if (!$class){
+            echo json_encode(array('code' => -3, 'message' => '抱歉，未找到此学生'));
+            return 0;
+        }
+        
+        //cURL请求
+        $url = BASE_SCHOOL_URL . 'ACTIONCLASSJDQUERY.APPPROCESS?mode=2&query=1&xuanzelei=总成绩';
+      
+        $ch = curl_init();
+        $postField = 'FirstYearTermNO=' . $clean['YearTermNO'] . '&EndYearTermNO=' . $clean['EndYearTermNO'] . '&xuanze=1&ClassNO=' . $class;
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postField);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        $result = iconv('gb2312', 'utf-8//IGNORE', $result);
+        $result = explode("\n", strip_tags($result));
+        
+        
+        $result_count = count($result) - 14;
+        $average_point = array();
+        $n = 0;
+        
+        for ($i = 84; $i < $result_count; $i++, $n++){
+            while (trim($result[$i]) == ''){
+                $i++;
+            }        
+            if (trim($result[++$i]) == $clean['ByStudentNO']){
+                $i += 6;
+                while (trim($result[$i]) == ''){
+                    $i++;
+                }      
+                echo json_encode(array('code' => 1, 'data' => trim($result[$i])));
+                return 0;
+            } else {
+                $i += 7;
+                while (trim($result[$i]) == ''){
+                    $i++;
+                }      
+                $i += 5;
+            }
+        }
+        
+        echo json_encode(array('code' => -1, 'message' => '抱歉，未能搜索到'));
+        return 0;
+    }
+    
+    
+    /**    
+     *  @Purpose:    
      *  显示查询学生成绩界面    
      *  @Method Name:
      *  showSearchStudentMark()    
@@ -316,7 +429,7 @@ class Search extends CI_Controller{
      *  getStudentMark()    
      *  @Parameter: 
      *  POST student_id  学生id
-     * 
+     *  POST term_id     起始学期id
      *  @Return: 
      *  
     */
@@ -325,7 +438,7 @@ class Search extends CI_Controller{
         $this->load->library('authorizee');
         
         if (!$this->session->userdata('cookie')){
-            echo json_encode(array('code' => -2, 'message' => '抱歉，您的权限不足或登录信息已过期'));
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
             return 0;
         }
         
