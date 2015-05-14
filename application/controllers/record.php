@@ -317,8 +317,8 @@ FILESUCCESS;
         
         //还原真实查询起始年份($i - BASIC_TERM_ID) * 2 + 1
         $term_year = ($this->input->post('student_term_id', TRUE) - 1) / 2 + BASIC_TERM_ID;
-        $data = $this->record_model->getStudentScoreList($term_year, $clean['ByStudentNO']);
-        $data[] = array(
+        $data['data'] = $this->record_model->getStudentScoreList($term_year, $clean['ByStudentNO']);
+        array_unshift($data['data'], array(
             'score_type_id' => 'z_1_1_1',
             'score_log_judge' => $z_basic_score,
             'score_type_content' => '智育基础分',
@@ -328,29 +328,30 @@ FILESUCCESS;
             'score_log_event_certify' => '教务处',
             'score_log_event_file' => '',
             'score_log_valid' => 1,
+            'score_log_event_tag' => '',
             'teacher_name' => '自动获取',
-        );
-        $sum = 0.000;
-        $d_sum = 0.000;
-        $z_sum = 0.000;
-        $w_sum = 0.000;
-        foreach ($data as $item){
-            $sum += $item['score_log_judge'];
+        ));
+        
+        $data['score']['sum'] = 0.000;
+        $data['score']['d_sum'] = 0.000;
+        $data['score']['z_sum'] = 0.000;
+        $data['score']['w_sum'] = 0.000;
+        foreach ($data['data'] as $item){
+            $data['score']['sum'] += $item['score_log_judge'];
             switch ($item['score_type_id'][0]){
                 case 'd':
-                    $d_sum += $item['score_log_judge'];
+                    $data['score']['d_sum'] += $item['score_log_judge'];
                     break;
                 case 'w':
-                    $w_sum += $item['score_log_judge'];
+                    $data['score']['w_sum'] += $item['score_log_judge'];
                     break;
                 case 'z':
-                    $z_sum += $item['score_log_judge'];
+                    $data['score']['z_sum'] += $item['score_log_judge'];
                     break;
             }
         }
         
-        echo $d_sum;
-        echo $w_sum;
-        echo $z_sum;
+        echo json_encode(array('code' => 1, 'data' => $data));
+        return 0;
     }
 }
