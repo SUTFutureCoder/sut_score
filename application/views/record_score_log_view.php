@@ -123,10 +123,18 @@
                         var student_accordion = $("#student_accordion");
                         student_accordion.html('');
                         $.each(result['data']['data'], function(i, item){
-                            student_accordion.append('<div class="panel panel-default"><div class="panel-heading" role="tab" id="heading_stu_' + i + '">\n\
+                            var content = '<div class="panel panel-default"><div class="panel-heading" role="tab" id="heading_stu_' + i + '">\n\
                     <h4 class="panel-title"><a data-toggle="collapse" data-parent="#accordion" href="#collapse_stu_' + i + '" data-toggle="collapse" aria-expanded="false" aria-controls="collapse_stu_' + i + '">' + item['score_type_content'] + '【' + item['score_log_judge'] + '】</a></h4></div>\n\
 <div id="collapse_stu_' + i + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading_stu_' + i +'"><div class="panel-body">\n\
-<table class="table table-hover"><tbody><tr><th scope="row">标签</th><td>' + item['score_log_event_tag'] + '</td></tr><tr><th scope="row">说明</th><td>' + item['score_log_event_intro'] + '</td></tr><tr><th scope="row">时间</th><td>' + item['score_log_event_time'] + '</td></tr><tr><th scope="row">证明</th><td>' + item['teacher_name'] + '-' + item['score_log_add_time'] + '<?= base_url()?>upload/' + item['score_log_event_file']  + '</td></tr><tr><th scope="row">变更</th><td>Larry</td></tr></tbody></table></div></div></div>');
+<table class="table table-hover"><tbody><tr><th scope="row" class="col-sm-1">标签</th><td>' + item['score_log_event_tag'] + '</td></tr><tr><th scope="row">说明</th><td>' + item['score_log_event_intro'] + '</td></tr><tr><th scope="row">时间</th><td>' + item['score_log_event_time'] + '</td></tr><tr><th scope="row">证明</th><td>' + item['teacher_name'] + '-' + item['score_log_add_time'];
+                            if (item['score_log_event_file'] != ""){
+                                content += '<?= base_url()?>upload/' + item['score_log_event_file']  + '</td></tr><tr><th scope="row">变更</th><td>Larry</td></tr></tbody></table></div></div></div>';
+                            } else {
+                                content += '</td></tr><tr><th scope="row">变更</th><td>Larry</td></tr></tbody></table></div></div></div>';
+                            }   
+    
+    
+                            student_accordion.append(content);
                         });
                         
                         $("#accordion").html(result['data']);
