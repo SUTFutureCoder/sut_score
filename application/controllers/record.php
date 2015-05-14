@@ -271,11 +271,36 @@ FILESUCCESS;
             return 0;
         }
         
+        $data = $this->getStudentScore($clean['YearTermNO'], $class, $clean['ByStudentNO']);
+        
+        echo json_encode(array('code' => 1, 'data' => $data));
+        return 0;
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  获取学生积分
+      * 
+     *  @Method Name:
+     *  getStudentScore($year_term_no, $class, $student_no)
+     *  @Parameter: 
+     *  int $year_term_no   起始学期id
+     *  int $class          班级id
+     *  int $student_no     学生id
+     * 
+     *  @Return: 
+     *  array $data         积分明细
+    */ 
+    private function getStudentScore($year_term_no, $class, $student_no){
+        $this->load->library('session');
+        $end_year_term_no = $year_term_no + 1;
+        
+        
         //cURL请求
         $url = BASE_SCHOOL_URL . 'ACTIONCLASSJDQUERY.APPPROCESS?mode=2&query=1&xuanzelei=总成绩';
-      
+        
         $ch = curl_init();
-        $postField = 'FirstYearTermNO=' . $clean['YearTermNO'] . '&EndYearTermNO=' . $clean['EndYearTermNO'] . '&xuanze=1&ClassNO=' . $class;
+        $postField = 'FirstYearTermNO=' . $year_term_no . '&EndYearTermNO=' . $end_year_term_no . '&xuanze=1&ClassNO=' . $class;
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
         curl_setopt($ch, CURLOPT_POST, 1);
@@ -296,7 +321,7 @@ FILESUCCESS;
             while (trim($result[$i]) == ''){
                 $i++;
             }        
-            if (trim($result[++$i]) == $clean['ByStudentNO']){
+            if (trim($result[++$i]) == $student_no){
                 $i += 6;
                 while (trim($result[$i]) == ''){
                     $i++;
@@ -316,8 +341,8 @@ FILESUCCESS;
         }
         
         //还原真实查询起始年份($i - BASIC_TERM_ID) * 2 + 1
-        $term_year = ($this->input->post('student_term_id', TRUE) - 1) / 2 + BASIC_TERM_ID;
-        $data['data'] = $this->record_model->getStudentScoreList($term_year, $clean['ByStudentNO']);
+        $term_year = ($year_term_no - 1) / 2 + BASIC_TERM_ID;
+        $data['data'] = $this->record_model->getStudentScoreList($term_year, $student_no);
         array_unshift($data['data'], array(
             'score_type_id' => 'z_1_1_1',
             'score_log_judge' => $z_basic_score,
@@ -351,7 +376,104 @@ FILESUCCESS;
             }
         }
         
-        echo json_encode(array('code' => 1, 'data' => $data));
-        return 0;
+        return $data;
+    }
+
+
+    /**    
+     *  @Purpose:    
+     *  生成学生积分列表表格
+      * 
+     *  @Method Name:
+     *  getStudentScoreExcel()    
+     *  @Parameter: 
+     *  
+     *  @Return: 
+     *  标准招新报名表.xlsx
+    */        
+    public function getStudentScoreExcel(){
+        $this->load->library('session');
+        $this->load->library('PHPExcel');
+        $this->load->model('search_model');
+        
+        $excel = new PHPExcel();
+        $clean = array();
+        if (!$this->session->userdata('cookie')){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
+            return 0;
+        }
+        
+        if (!$this->input->post('student_term_id', TRUE) || !ctype_digit($this->input->post('student_term_id', TRUE))){
+            echo json_encode(array('code' => -2, 'message' => '请选择正确的起始学期'));
+            return 0;
+        } else {
+            $clean['YearTermNO'] = $this->input->post('student_term_id', TRUE);
+        }
+        
+        $clean['EndYearTermNO'] = (int)$clean['YearTermNO'] + 1;
+        
+        if (!$this->input->post('student_id', TRUE)){
+            echo json_encode(array('code' => -2, 'message' => '请输入正确的学号'));
+            return 0;
+        } else {
+            $clean['ByStudentNO'] = $this->input->post('student_id', TRUE);
+        }
+        
+        $class = $this->search_model->getStudentClassId($clean['ByStudentNO']);
+        
+        if (!$class){
+            echo json_encode(array('code' => -3, 'message' => '抱歉，未找到此学生'));
+            return 0;
+        }
+        
+        $data = $this->getStudentScore($clean['YearTermNO'], $class, $clean['ByStudentNO']);
+        
+                
+        $excel_writer = new PHPExcel_Writer_Excel2007($excel);                
+        $clean['file_name'] = $class['ByStudentNo'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细.xlsx';
+    
+  //////////////////////////////////////////////////////
+        $excel->getProperties()->setCreator("{$clean['user_section']}-{$clean['user_name']}")
+            ->setTitle("{$this->basic->organ_name}{$clean['user_section']}招新表-负责人:{$clean['user_name']}");
+
+            $excel->setActiveSheetIndex(0)->setCellValue('A1', '招新部门')
+                    ->setCellValue('B1', $clean['user_section'])
+                    ->setCellValue('C1', '负责人')
+                    ->setCellValue('D1', $clean['user_name'])
+                    ->setCellValue('E1', '账号')
+                    ->setCellValue('F1', $clean['user_id'])
+                    ->setCellValue('G1', '联系方式')
+                    ->setCellValue('H1', $clean['user_telephone'])
+    //              ->mergeCells('I1:J1')
+                    ->setCellValue('A2', '姓名')
+                    ->setCellValue('B2', '电话')
+                    ->setCellValue('C2', 'QQ')
+                    ->setCellValue('D2', '专业')
+                    ->setCellValue('E2', '性别')
+                    ->setCellValue('F2', '特长')
+                    //->setCellValue('G2', '密码')
+                    ->setCellValue('G2', '打分');
+            
+            $excel->getActiveSheet()->getStyle('A1')->getFont()->setBold(TRUE);
+            $excel->getActiveSheet()->getStyle('C1')->getFont()->setBold(TRUE);
+            $excel->getActiveSheet()->getStyle('E1')->getFont()->setBold(TRUE);
+            $excel->getActiveSheet()->getStyle('G1')->getFont()->setBold(TRUE);
+
+
+//            $excel->setActiveSheetIndex(0)->getColumnDimension('E')->setAutoSize(TRUE);
+            $excel->setActiveSheetIndex(0)->getColumnDimension('H')->setAutoSize(TRUE);
+
+
+            header("Content-Type: application/force-download");  
+            header("Content-Type: application/octet-stream");  
+            header("Content-Type: application/download");  
+            header('Content-Disposition:inline;filename="'.$clean['file_name'].'"');  
+            header("Content-Transfer-Encoding: binary");  
+            header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");  
+            header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");  
+            header("Cache-Control: must-revalidate, post-check=0, pre-check=0");  
+            header("Pragma: no-cache");  
+            
+            $excel_writer->save('php://output');
     }
 }
