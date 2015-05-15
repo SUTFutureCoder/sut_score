@@ -124,11 +124,14 @@ class Record_model extends CI_Model{
     */
     public function getStudentScoreList($start_term, $student_id){
         $this->load->database();
+        $this->load->model('search_model');
+        $class = $this->search_model->getStudentClassId($student_id);
         $this->db->select('score_log.score_log_judge, score_log.score_log_event_tag, score_log.score_type_id,'
                 . 'score_log.score_log_add_time, score_log.score_log_event_time, '
                 . 'score_log.score_log_event_intro, score_log.score_log_event_certify, '
                 . 'score_log.score_log_event_file, score_log.score_log_valid, teacher.teacher_name, score_type.score_type_content');
-        $this->db->where('score_log.class_student_id', $student_id);
+        $this->db->where('(score_log.class_student_id = "' .$student_id . '" OR score_log.class_student_id = "' . $class . '") AND score_log.score_log_valid = "1"');
+        
         $data = array();
         
         $start_time = $start_term . '-09-01';
@@ -140,10 +143,12 @@ class Record_model extends CI_Model{
         $this->db->from('score_log');
         $this->db->join('score_type', 'score_type.score_type_id = score_log.score_type_id');
         $this->db->join('teacher', 'teacher.teacher_id = score_log.teacher_id');
+        
         $result = $this->db->get();
         foreach ($result->result_array() as $value){
             $data[] = $value;
         }
         return $data;
     }
+    
 }

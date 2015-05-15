@@ -293,6 +293,8 @@ FILESUCCESS;
     */ 
     private function getStudentScore($year_term_no, $class, $student_no){
         $this->load->library('session');
+        $this->load->model('record_model');
+        
         $end_year_term_no = $year_term_no + 1;
         
         
@@ -362,7 +364,6 @@ FILESUCCESS;
         $data['score']['z_sum'] = 0.000;
         $data['score']['w_sum'] = 0.000;
         foreach ($data['data'] as $item){
-            $data['score']['sum'] += $item['score_log_judge'];
             switch ($item['score_type_id'][0]){
                 case 'd':
                     $data['score']['d_sum'] += $item['score_log_judge'];
@@ -374,6 +375,27 @@ FILESUCCESS;
                     $data['score']['z_sum'] += $item['score_log_judge'];
                     break;
             }
+        }
+        
+        if ($data['score']['d_sum'] >= 20){
+            $data['score']['d_sum'] = 20;
+        }
+        
+        if ($data['score']['w_sum'] >= 10){
+            $data['score']['w_sum'] = 10;
+        }
+        
+        if ($data['score']['z_sum'] >= 70){
+            $data['score']['z_sum'] = 70;
+        }
+        
+        $data['score']['sum'] = $data['score']['d_sum'] + $data['score']['w_sum'] + $data['score']['z_sum'];
+        
+        //评优资格标记
+        if ($data['score']['d_sum'] < 12){
+            $data['appraise'] = 0;
+        } else {
+            $data['appraise'] = 1;
         }
         
         return $data;
@@ -396,6 +418,7 @@ FILESUCCESS;
         $this->load->library('PHPExcel');
         $this->load->model('search_model');
         
+        
         $excel = new PHPExcel();
         $clean = array();
         if (!$this->session->userdata('cookie')){
@@ -403,77 +426,258 @@ FILESUCCESS;
             return 0;
         }
         
-        if (!$this->input->post('student_term_id', TRUE) || !ctype_digit($this->input->post('student_term_id', TRUE))){
-            echo json_encode(array('code' => -2, 'message' => '请选择正确的起始学期'));
-            return 0;
-        } else {
-            $clean['YearTermNO'] = $this->input->post('student_term_id', TRUE);
-        }
+//        if (!$this->input->post('student_term_id', TRUE) || !ctype_digit($this->input->post('student_term_id', TRUE))){
+//            echo json_encode(array('code' => -2, 'message' => '请选择正确的起始学期'));
+//            return 0;
+//        } else {
+//            $clean['YearTermNO'] = $this->input->post('student_term_id', TRUE);
+//        }
         
+        $clean['YearTermNO'] = 13;
         $clean['EndYearTermNO'] = (int)$clean['YearTermNO'] + 1;
+        $term_year = ($clean['YearTermNO'] - 1) / 2 + BASIC_TERM_ID;
+//        if (!$this->input->post('student_id', TRUE)){
+//            echo json_encode(array('code' => -2, 'message' => '请输入正确的学号'));
+//            return 0;
+//        } else {
+//            $clean['ByStudentNO'] = $this->input->post('student_id', TRUE);
+//        }
+        $clean['ByStudentNO'] = '120406305';
+        $student_info = $this->search_model->getStudentInfo($clean['ByStudentNO']);
         
-        if (!$this->input->post('student_id', TRUE)){
-            echo json_encode(array('code' => -2, 'message' => '请输入正确的学号'));
-            return 0;
-        } else {
-            $clean['ByStudentNO'] = $this->input->post('student_id', TRUE);
-        }
-        
-        $class = $this->search_model->getStudentClassId($clean['ByStudentNO']);
-        
-        if (!$class){
+        if (!$student_info){
             echo json_encode(array('code' => -3, 'message' => '抱歉，未找到此学生'));
             return 0;
         }
         
-        $data = $this->getStudentScore($clean['YearTermNO'], $class, $clean['ByStudentNO']);
+        $data = $this->getStudentScore($clean['YearTermNO'], $student_info['student_class'], $clean['ByStudentNO']);
         
-                
-        $excel_writer = new PHPExcel_Writer_Excel2007($excel);                
-        $clean['file_name'] = $class['ByStudentNo'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细.xlsx';
+        $objPHPExcel = new PHPExcel();
+        $objWriter = new PHPExcel_Writer_Excel5($objPHPExcel);     
+        
+        $clean['file_name'] = $student_info['school_name'] . '-' . $student_info['class_name'] . '-' . $clean['ByStudentNO'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细.xlsx';
     
-  //////////////////////////////////////////////////////
-        $excel->getProperties()->setCreator("{$clean['user_section']}-{$clean['user_name']}")
-            ->setTitle("{$this->basic->organ_name}{$clean['user_section']}招新表-负责人:{$clean['user_name']}");
+        
+        $objPHPExcel->getProperties()->setCreator('SUTACM *Chen')
+            ->setTitle($student_info['school_name'] . '-' . $student_info['class_name'] . '-' . $clean['ByStudentNO'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细');
 
-            $excel->setActiveSheetIndex(0)->setCellValue('A1', '招新部门')
-                    ->setCellValue('B1', $clean['user_section'])
-                    ->setCellValue('C1', '负责人')
-                    ->setCellValue('D1', $clean['user_name'])
-                    ->setCellValue('E1', '账号')
-                    ->setCellValue('F1', $clean['user_id'])
-                    ->setCellValue('G1', '联系方式')
-                    ->setCellValue('H1', $clean['user_telephone'])
-    //              ->mergeCells('I1:J1')
-                    ->setCellValue('A2', '姓名')
-                    ->setCellValue('B2', '电话')
-                    ->setCellValue('C2', 'QQ')
-                    ->setCellValue('D2', '专业')
-                    ->setCellValue('E2', '性别')
-                    ->setCellValue('F2', '特长')
-                    //->setCellValue('G2', '密码')
-                    ->setCellValue('G2', '打分');
+        $objPHPExcel->getActiveSheet()->setCellValue('A1', '姓名');
+        $objPHPExcel->getActiveSheet()->getStyle('A1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('A1')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('B1', $student_info['student_name']);
+        $objPHPExcel->getActiveSheet()->getStyle('B1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+    
+        $objPHPExcel->getActiveSheet()->setCellValue('C1', '学院');
+        $objPHPExcel->getActiveSheet()->getStyle('C1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('C1')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('D1', $student_info['school_name']);
+        $objPHPExcel->getActiveSheet()->getStyle('D1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+    
+        $objPHPExcel->getActiveSheet()->setCellValue('E1', '班级');
+        $objPHPExcel->getActiveSheet()->getStyle('E1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('E1')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('F1', $student_info['class_name']);
+        $objPHPExcel->getActiveSheet()->getStyle('F1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+    
+        $objPHPExcel->getActiveSheet()->setCellValue('G1', '生成时间');
+        $objPHPExcel->getActiveSheet()->getStyle('G1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('G1')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('H1', date('Y-m-d H:i:s'));
+        $objPHPExcel->getActiveSheet()->getStyle('H1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('A2', '序号');
+        $objPHPExcel->getActiveSheet()->getStyle('A2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('A2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('B2', '项目');
+        $objPHPExcel->getActiveSheet()->getStyle('B2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('B2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('C2', '分数');
+        $objPHPExcel->getActiveSheet()->getStyle('C2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('C2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('D2', '标签');
+        $objPHPExcel->getActiveSheet()->getStyle('D2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('D2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('E2', '说明');
+        $objPHPExcel->getActiveSheet()->getStyle('E2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('E2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('F2', '时间');
+        $objPHPExcel->getActiveSheet()->getStyle('F2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('F2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('G2', '证明人');
+        $objPHPExcel->getActiveSheet()->getStyle('G2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('G2')->getFont()->setBold(true);
+        
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('H2', '审核章');
+        $objPHPExcel->getActiveSheet()->getStyle('H2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('H2')->getFont()->setBold(true);
+        
+        $i = 3;
+        foreach ($data['data'] as $data_item){
+            //第一列
+            $objPHPExcel->getActiveSheet()->setCellValue('A' . $i, ($i - 2));
             
-            $excel->getActiveSheet()->getStyle('A1')->getFont()->setBold(TRUE);
-            $excel->getActiveSheet()->getStyle('C1')->getFont()->setBold(TRUE);
-            $excel->getActiveSheet()->getStyle('E1')->getFont()->setBold(TRUE);
-            $excel->getActiveSheet()->getStyle('G1')->getFont()->setBold(TRUE);
-
-
-//            $excel->setActiveSheetIndex(0)->getColumnDimension('E')->setAutoSize(TRUE);
-            $excel->setActiveSheetIndex(0)->getColumnDimension('H')->setAutoSize(TRUE);
-
-
-            header("Content-Type: application/force-download");  
-            header("Content-Type: application/octet-stream");  
-            header("Content-Type: application/download");  
-            header('Content-Disposition:inline;filename="'.$clean['file_name'].'"');  
-            header("Content-Transfer-Encoding: binary");  
-            header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");  
-            header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");  
-            header("Cache-Control: must-revalidate, post-check=0, pre-check=0");  
-            header("Pragma: no-cache");  
+            //第二列
+            $objPHPExcel->getActiveSheet()->setCellValue('B' . $i, $data_item['score_type_content']);
             
-            $excel_writer->save('php://output');
+            //第三列
+            $objPHPExcel->getActiveSheet()->setCellValue('C' . $i, $data_item['score_log_judge']);
+            
+            //第四列
+            $objPHPExcel->getActiveSheet()->setCellValue('D' . $i, $data_item['score_log_event_tag']);
+            
+            //第五列
+            $objPHPExcel->getActiveSheet()->setCellValue('E' . $i, $data_item['score_log_event_intro']);
+            
+            //第六列
+            $objPHPExcel->getActiveSheet()->setCellValue('F' . $i, $data_item['score_log_event_time']);
+            
+            //第七列
+            $objPHPExcel->getActiveSheet()->setCellValue('G' . $i, $data_item['teacher_name']);
+            
+            //设置高度
+            $objPHPExcel->getActiveSheet()->getRowDimension($i)->setRowHeight(30);
+            
+            //居中
+            $objPHPExcel->getActiveSheet()->getStyle('A' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
+            $objPHPExcel->getActiveSheet()->getStyle('B' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
+            $objPHPExcel->getActiveSheet()->getStyle('C' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
+            $objPHPExcel->getActiveSheet()->getStyle('D' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
+            $objPHPExcel->getActiveSheet()->getStyle('E' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
+            $objPHPExcel->getActiveSheet()->getStyle('F' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
+            $objPHPExcel->getActiveSheet()->getStyle('G' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
+            $objPHPExcel->getActiveSheet()->getStyle('H' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
+
+            ++$i;
+        }
+        
+        
+        $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('C')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('D')->setWidth(25);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('E')->setWidth(30);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('F')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('G')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('H')->setWidth(20);
+
+        
+        header("Content-Type: application/force-download");  
+        header("Content-Type: application/octet-stream");  
+        header("Content-Type: application/download");  
+        header('Content-Disposition:inline;filename="' . $clean['file_name'] . '"');  
+        header("Content-Transfer-Encoding: binary");  
+        header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");  
+        header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");  
+        header("Cache-Control: must-revalidate, post-check=0, pre-check=0");  
+        header("Pragma: no-cache");  
+        $objWriter->save('php://output');
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  添加记录    
+     *  @Method Name:
+     *  setScoreLog()    
+     *  @Parameter: 
+     *  POST class_student_id           班级或学生id
+     *  POST score_type_id              项目id
+     *  POST score_mod                  + / -
+     *  POST score_log_judge            分数
+     *  POST score_log_event_time       项目发生时间
+     *  POST score_log_event_tag        项目标签
+     *  POST score_log_event_intro      项目介绍
+     *  POST score_log_event_certify    项目证明单位
+     *  POST score_log_event_file       项目证明文件路径
+     * 
+     *  @Return: 
+     *  
+    */
+    public function setScoreLog(){
+        $this->load->library('session');
+        $this->load->model('record_model');
+        if (!$this->session->userdata('cookie')){
+            echo json_encode(array('code' => -2, 'message' => '抱歉，您的权限不足或登录信息已过期,请重新登录'));
+            return 0;
+        }
+        $data = array();
+        
+        if (!$this->input->post('class_student_id', TRUE) || !ctype_digit($this->input->post('class_student_id', TRUE)) || strlen($this->input->post('class_student_id', TRUE)) > 9){
+            echo json_encode(array('code' => -3, 'message' => '班级或学生id必须为数字', 'id' => 'student_class_id'));
+            return 0;
+        } else {
+            $data['class_student_id'] = $this->input->post('class_student_id', TRUE);
+        }
+        
+        if (!$this->input->post('score_type_id', TRUE) || strlen($this->input->post('score_type_id', TRUE)) > 8){
+            echo json_encode(array('code' => -3, 'message' => '请选择正确的项目', 'id' => 'rule_item'));
+            return 0;
+        } else {
+            $data['score_type_id'] = $this->input->post('score_type_id', TRUE);
+        }
+        
+        if (!$this->input->post('score_log_judge', TRUE) || !is_numeric($this->input->post('score_log_judge', TRUE))){
+            echo json_encode(array('code' => -3, 'message' => '请选择数字分数', 'id' => 'score_judge'));
+            return 0;
+        } else {
+            $data['score_log_judge'] = (float)$this->input->post('score_log_judge', TRUE) * (int)(($this->input->post('score_mod', TRUE)) . 1);
+        }
+        
+        if (!$this->input->post('score_log_event_time', TRUE) || !preg_match('/\d\d\d\d-[0-1]?[1-9]-[0-3]?[0-9]/', $this->input->post('score_log_event_time', TRUE))){
+            echo json_encode(array('code' => -3, 'message' => '请输入正确的时间，例：2015-05-12', 'id' => 'event_time'));
+            return 0;
+        } else {
+            $data['score_log_event_time'] = $this->input->post('score_log_event_time', TRUE);
+        }
+        
+        if (!$this->input->post('score_log_event_tag', TRUE) || mb_strlen($this->input->post('score_log_event_tag', TRUE)) > 40){
+            echo json_encode(array('code' => -3, 'message' => '标签不能为空或超过40个字符', 'id' => 'event_tag'));
+            return 0;
+        } else {
+            $data['score_log_event_tag'] = $this->input->post('score_log_event_tag', TRUE);
+        }
+        
+        if (!$this->input->post('score_log_event_intro', TRUE) || mb_strlen($this->input->post('score_log_event_intro', TRUE)) > 500){
+            echo json_encode(array('code' => -3, 'message' => '说明不能为空或超过500个字符', 'id' => 'event_intro'));
+            return 0;
+        } else {
+            $data['score_log_event_intro'] = $this->input->post('score_log_event_intro', TRUE);
+        }
+            
+        if (!$this->input->post('score_log_event_certify', TRUE) || mb_strlen($this->input->post('score_log_event_certify', TRUE)) > 40){
+            echo json_encode(array('code' => -3, 'message' => '证明人不能为空或超过40个字符', 'id' => 'event_certify'));
+            return 0;
+        } else {
+            $data['score_log_event_certify'] = $this->input->post('score_log_event_certify', TRUE);
+        }
+        
+        if ($this->input->post('score_log_event_file', TRUE) && mb_strlen($this->input->post('score_log_event_file', TRUE)) > 100){
+            echo json_encode(array('code' => -3, 'message' => '请您精简文件名到80个字符以内', 'id' => 'certify_file_info'));
+            return 0;
+        } else {
+            $data['score_log_event_file'] = $this->input->post('score_log_event_file', TRUE);
+        }
+        
+        //添加额外信息
+        $data['score_log_add_time'] = date('Y-m-d H:i:s');
+        $data['teacher_id'] = $this->session->userdata('user_id');
+        
+        if ($this->record_model->setScoreLog($data)){
+            echo json_encode(array('code' => 1));
+            return 0;
+        } else {
+            echo json_encode(array('code' => 2, 'message' => '插入数据失败，请联系管理员'));
+            return 0;   
+        }
     }
 }

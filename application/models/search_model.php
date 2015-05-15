@@ -199,11 +199,45 @@ class Search_model extends CI_Model{
         
         if ($result->num_rows() > 0)
         {
-            $data = $result->row(0, 'array'); 
+            $data = $result->row_array();
         } else {
             $data['student_class'] = 0;
         }
         
         return $data['student_class'];
     }
+    
+    /**    
+     *  @Purpose:    
+     *  获取学生信息    
+     *  @Method Name:
+     *  getStudentInfo($student_id)
+     *  @Parameter: 
+     *  int $student_id 学生id
+     *  @Return: 
+     *  array $data 学生信息
+     *  int   0     失败
+    */
+    public function getStudentInfo($student_id){
+        $school_id = substr($student_id, 2, 2);
+        
+        $this->load->database();
+        $this->db->select('student.student_name, student.student_class, school_info.school_name, class_info.class_name');
+        $this->db->where('student.student_id', $student_id);
+        $this->db->where('school_info.school_id', $school_id);
+        $this->db->from('student');
+        $this->db->join('class_info', 'class_info.class_id = student.student_class');
+        $this->db->join('school_info', 'school_info.school_id');
+        $result = $this->db->get();
+        
+        if ($result->num_rows() > 0)
+        {
+            $data = $result->row_array();
+            return $data;
+        } else {
+            return 0;
+        }
+    }
+    
+    
 }
