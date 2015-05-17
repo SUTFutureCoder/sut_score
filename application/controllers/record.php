@@ -411,7 +411,7 @@ FILESUCCESS;
      *  @Parameter: 
      *  
      *  @Return: 
-     *  标准招新报名表.xlsx
+     *  $student_info['school_name'] . '-' . $student_info['class_name'] . '-' . $clean['ByStudentNO'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细.xls';
     */        
     public function getStudentScoreExcel(){
         $this->load->library('session');
@@ -422,31 +422,30 @@ FILESUCCESS;
         $excel = new PHPExcel();
         $clean = array();
         if (!$this->session->userdata('cookie')){
-            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
+            echo '<script>alert("抱歉，您的权限不足或登录信息已过期,请重新登录");window.parent.parent.location.href="' . base_url() . '";</script>';            
             return 0;
         }
         
-//        if (!$this->input->post('student_term_id', TRUE) || !ctype_digit($this->input->post('student_term_id', TRUE))){
-//            echo json_encode(array('code' => -2, 'message' => '请选择正确的起始学期'));
-//            return 0;
-//        } else {
-//            $clean['YearTermNO'] = $this->input->post('student_term_id', TRUE);
-//        }
+        if (!$this->input->get('student_term_id', TRUE) || !ctype_digit($this->input->get('student_term_id', TRUE))){
+            echo '<script>alert("请选择正确的起始学期");</script>';            
+            return 0;
+        } else {
+            $clean['YearTermNO'] = $this->input->get('student_term_id', TRUE);
+        }
         
-        $clean['YearTermNO'] = 13;
-        $clean['EndYearTermNO'] = (int)$clean['YearTermNO'] + 1;
         $term_year = ($clean['YearTermNO'] - 1) / 2 + BASIC_TERM_ID;
-//        if (!$this->input->post('student_id', TRUE)){
-//            echo json_encode(array('code' => -2, 'message' => '请输入正确的学号'));
-//            return 0;
-//        } else {
-//            $clean['ByStudentNO'] = $this->input->post('student_id', TRUE);
-//        }
-        $clean['ByStudentNO'] = '120406305';
+        
+        if (!$this->input->get('student_id', TRUE)){
+            echo '<script>alert("请输入正确的学号");</script>';            
+            return 0;
+        } else {
+            $clean['ByStudentNO'] = $this->input->get('student_id', TRUE);
+        }
+        
         $student_info = $this->search_model->getStudentInfo($clean['ByStudentNO']);
         
         if (!$student_info){
-            echo json_encode(array('code' => -3, 'message' => '抱歉，未找到此学生'));
+            echo '<script>alert("抱歉，未找到此学生");</script>';            
             return 0;
         }
         
@@ -455,7 +454,7 @@ FILESUCCESS;
         $objPHPExcel = new PHPExcel();
         $objWriter = new PHPExcel_Writer_Excel5($objPHPExcel);     
         
-        $clean['file_name'] = $student_info['school_name'] . '-' . $student_info['class_name'] . '-' . $clean['ByStudentNO'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细.xlsx';
+        $clean['file_name'] = $student_info['school_name'] . '-' . $student_info['class_name'] . '-' . $clean['ByStudentNO'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细.xls';
     
         
         $objPHPExcel->getProperties()->setCreator('SUTACM *Chen')
@@ -582,6 +581,7 @@ FILESUCCESS;
         header("Cache-Control: must-revalidate, post-check=0, pre-check=0");  
         header("Pragma: no-cache");  
         $objWriter->save('php://output');
+        
     }
     
     /**    

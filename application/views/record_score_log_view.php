@@ -30,6 +30,7 @@
                         <input type="text" class="form-control" name="student_id" id="student_id" placeholder="学号">
                     </div>
                     <button type="submit" id="student_submit" class="btn btn-default">查询</button>
+                    <button type="button" class="btn btn-primary" id="export_excel_button" onclick="exportExcel(this, 'student')">导出Excel表格</button>
                 </form>
                 <hr>
                 <div class="alert alert-info" id="student_score_stat" role="alert"><a class="col-sm-offset-2">德育：</a><a id="d_total_score"></a><a class="col-sm-offset-2">文体：</a><a id="w_total_score"></a><a class="col-sm-offset-2">智育：</a><a id="z_total_score"></a><a class="col-sm-offset-2">总分：</a><a id="total_score"></a></div>
@@ -38,10 +39,6 @@
                     <hr>
                 </form> -->
                 <div class="panel-group" id="student_accordion" role="tablist" aria-multiselectable="true">
-                    
-                </div>
-                
-                <div id='result'>
                     
                 </div>
             </div>
@@ -94,6 +91,9 @@
                 <div class="col-sm-12" id='result'>
                     <hr>
                 </div>
+            </div>
+            <div hidden="hidden" id="export_excel">
+                
             </div>
         </div>
     </div>
@@ -178,6 +178,14 @@
                     });
                 }
             )
+        }
+        
+        //导出excel
+        function exportExcel(obj, type){
+            if (type == 'student'){
+                $("#export_excel").html('<iframe src="<?= base_url('index.php?c=record&m=getStudentScoreExcel') ?>&student_term_id=' + $("#student_term_id").val() + '&student_id=' + $("#student_id").val() +'"></iframe>');
+            }
+            
         }
     </script>
 </body>
