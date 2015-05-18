@@ -239,5 +239,44 @@ class Search_model extends CI_Model{
         }
     }
     
+    /**    
+     *  @Purpose:    
+     *  检查班级id是否存在    
+     *  @Method Name:
+     *  getClassInfo($class_id)
+     *  @Parameter: 
+     *  int $class_id 班级id
+     *  @Return: 
+     *  array   data    班级信息
+     *  int     0       失败
+    */
+    public function getClassInfo($class_id){
+        $this->load->database();
+        $this->db->where('class_id', $class_id);
+        $result = $this->db->get('class_info');
+        if ($result->num_rows() > 0)
+        {
+            $data = array();
+            foreach ($result->result_array() as $item){
+                $data = $item;
+            }
+            
+            $school_id = substr($class_id, 2, 2);
+            $this->db->where('school_id', $school_id);
+            $result = $this->db->get('school_info');
+            if ($result->num_rows() > 0){
+                foreach ($result->result_array() as $item){
+                    $data = array_merge($data, $item);
+                }
+                return $data;
+            } else {
+                return 0;
+            }
+            
+        } else {
+            return 0;
+        }
+    }
+    
     
 }

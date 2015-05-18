@@ -9,7 +9,7 @@
     <div role="tabpanel">
         <!-- Nav tabs -->
         <ul class="nav nav-tabs" role="tablist">
-            <li role="presentation" class="active"><a href="#student" aria-controls="student" role="tab" data-toggle="tab">学生</a></li>
+            <li role="presentation" class="active"><a href="#student" id="student_aria_tab" aria-controls="student" role="tab" data-toggle="tab">学生</a></li>
             <li role="presentation"><a href="#class" aria-controls="class" role="tab" data-toggle="tab">班级</a></li>
         </ul>
 
@@ -84,7 +84,7 @@
                     </div>
                     <button class="form-control btn btn-primary" id="class_submit" onclick="getClassPointList()">查询</button>
                     <hr/>
-                    <button class="form-control btn btn-primary" id="export_class_excel_button" onclick="exportExcel(this, 'class')">导出Excel表格</button>
+                    <input type="button" class="form-control btn btn-primary" id="class_export_excel" onclick="exportExcel(this, 'class')" value="导出Excel表格">
                     <!--
                     <hr>
                     <button class="form-control btn btn-primary">导出分项表格</button>
@@ -94,16 +94,17 @@
                     <hr>
                 </div>
             </div>
-            <div hidden="hidden" id="export_excel">
-                
-            </div>
         </div>
+    </div>
+    <div hidden="hidden" id="export_excel">
+                
     </div>
     <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
     <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="<?= base_url('js/json.js')?>"></script>
     <script type="text/javascript" src="<?= base_url('js/jquery.form.js')?>"></script>
     <script>
+        var select_term = 0;
         var options = {
             dataType : "json",
             beforeSubmit : function (){
@@ -185,44 +186,35 @@
         function exportExcel(obj, type){
             if (type == 'student'){
                 $("#export_excel").html('<iframe src="<?= base_url('index.php?c=record&m=getStudentScoreExcel') ?>&student_term_id=' + $("#student_term_id").val() + '&student_id=' + $("#student_id").val() +'"></iframe>');
+            } else if (type == 'class'){
+                $("#export_excel").html('<iframe src="<?= base_url('index.php?c=record&m=getClassScoreExcel') ?>&class_term_id=' + $("#form_search_term").val() + '&class_id=' + $("#form_search_class").val() +'"></iframe>');
             }
-            
         }
         
         //导出班级
         function getClassPointList(){
             $("#class_submit").attr("disabled", "disabled").html("正在提交中，请稍后");
+            select_term = $("#form_search_term").val();
             $.post(
                 '<?= base_url('index.php/record/getClassScoreLogList')?>',
                 {
-                    class_term_id   : $("#form_search_term").val(),
+                    class_term_id   : select_term,
                     class_id        : $("#form_search_class").val(),
                 },
-                function (data){
-                    var data = JSON.parse(data);
+                function (result){
+                    var result = JSON.parse(result);
                     switch (result['code'])
                     {
                         case 1:
                             //填充主体
                             var class_result = $("#class_result");
                             class_result.html('<hr>');
-                            var content = '<table class="table table-striped table-hover"><tr><th>学号</th><th>姓名</th><th>类型</th><th>标签</th><th>分数</th><th>证明</th></tr><tbody>';
-                            $.each(result['data'], function(i, item){
-                                for (var student_id in result['data']){
-                                    content += '<tr><th scope="row">' + student_id + '</th><td>' + result['data'][student_id][''] + '</td></tr>';
-                                };
-                                
-                                if (item['score_log_event_file'] != ""){
-                                    content += '<?= base_url()?>upload/' + item['score_log_event_file']  + '</td></tr><tr><th scope="row">变更</th><td>Larry</td></tr></tbody></table></div></div></div>';
-                                } else {
-                                    content += '</td></tr><tr><th scope="row">变更</th><td>Larry</td></tr></tbody></table></div></div></div>';
-                                }   
-
-                                
-                            });
+                            var content = '<table class="table table-striped table-hover"><tr><th>学号</th><th>姓名</th><th>德育</th><th>文体</th><th>智育</th><th>总分</th></tr><tbody>';
+                            for (student_id in result['data']){
+                                content += '<tr><th scope="row" style="cursor:pointer" onclick="searchStudentId(\'' + student_id + '\')">' + student_id + '</th><td style="cursor:pointer" onclick="searchStudentId(\'' + student_id + '\')">' + result['data'][student_id]['name'] + '</td><td>' + result['data'][student_id]['score']['d_sum'] + '</td><td>' + result['data'][student_id]['score']['w_sum'] + '</td><td>' + result['data'][student_id]['score']['z_sum'] + '</td><td>' + result['data'][student_id]['score']['sum'] + '</td></tr>';
+                            }
                             content += '</tbody></table>';
                             class_result.append(content);
-                            
                             break;
                         default:
                             alert(result['message']);
@@ -232,6 +224,16 @@
                     $("#class_submit").removeAttr("disabled").html("查询");
                 }
             )
+        }
+        
+        //在班级面板中点击id或姓名切换标签页并搜索
+        function searchStudentId(student_id){
+            var student_tab = $("#student");
+            $("#student_aria_tab").tab('show');
+            student_tab.find("#student_term_id option[value='" + select_term + "']").attr("selected", true);
+            student_tab.find("#student_term_id option[value='" + select_term + "']").attr("selected", true);
+            student_tab.find("#student_id").val(student_id);
+            student_tab.find("#student_score_search").submit();
         }
     </script>
 </body>

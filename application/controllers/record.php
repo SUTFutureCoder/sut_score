@@ -306,8 +306,6 @@ FILESUCCESS;
         } else {
             $clean['YearTermNO'] = $this->input->post('class_term_id', TRUE);
         }
-//        $clean['YearTermNO'] = '13';
-        $clean['EndYearTermNO'] = (int)$clean['YearTermNO'] + 1;
         
         if (!$this->input->post('class_id', TRUE) || !ctype_digit($this->input->post('class_id', TRUE))){
             echo json_encode(array('code' => -2, 'message' => '请输入正确的班级id'));
@@ -316,9 +314,7 @@ FILESUCCESS;
            $class = $this->input->post('class_id', TRUE);
         }
         
-//        $class = '1204063';
-        $data = $this->getClassScore($clean['YearTermNO'], $class);
-                
+        $data = $this->getClassScore($clean['YearTermNO'], $class, 'score');
         echo json_encode(array('code' => 1, 'data' => $data));
         return 0;
     }
@@ -437,13 +433,6 @@ FILESUCCESS;
         
         $data['score']['sum'] = $data['score']['d_sum'] + $data['score']['w_sum'] + $data['score']['z_sum'];
         
-        //评优资格标记
-        if ($data['score']['d_sum'] < 12){
-            $data['appraise'] = 0;
-        } else {
-            $data['appraise'] = 1;
-        }
-        
         return $data;
     }
 
@@ -457,14 +446,13 @@ FILESUCCESS;
      *  @Parameter: 
      *  int $year_term_no   起始学期id
      *  int $class          班级id
-     * 
+     *  char $mode          模式【score/all】
      *  @Return: 
      *  array $data         积分明细
     */ 
-    private function getClassScore($year_term_no, $class){
+    public function getClassScore($year_term_no = '13', $class = '1204063', $mode = 'score'){
         $this->load->library('session');
         $this->load->model('record_model');
-        header("Content-type:text/html;charset=utf-8");
         $end_year_term_no = $year_term_no + 1;
         
         //cURL请求
@@ -509,20 +497,28 @@ FILESUCCESS;
         $term_year = ($year_term_no - 1) / 2 + BASIC_TERM_ID;
         foreach ($average_point as $average_point_item){
             $data[$average_point_item['student_id']]['name'] = $average_point_item['student_name'];
-            $data[$average_point_item['student_id']]['data'] = $this->record_model->getStudentScoreList($term_year, $average_point_item['student_id']);
-            array_unshift($data[$average_point_item['student_id']]['data'], array(
-                'score_type_id' => 'z_1_1_1',
-                'score_log_judge' => $average_point_item['z_basic_score'],
-                'score_type_content' => '智育基础分',
-                'score_log_add_time' => date('Y-m-d H:i:s'),
-                'score_log_event_time' => $term_year . '-' . ($term_year + 1) . '年度',
-                'score_log_event_intro' => '',
-                'score_log_event_certify' => '教务处',
-                'score_log_event_file' => '',
-                'score_log_valid' => 1,
-                'score_log_event_tag' => '',
-                'teacher_name' => '自动获取',
-            ));
+            $data[$average_point_item['student_id']]['data'] = $this->record_model->getStudentScoreList($term_year, $average_point_item['student_id'], $mode);
+            if ($mode == 'all'){
+                array_unshift($data[$average_point_item['student_id']]['data'], array(
+                    'score_type_id' => 'z_1_1_1',
+                    'score_log_judge' => $average_point_item['z_basic_score'],
+                    'score_type_content' => '智育基础分',
+                    'score_log_add_time' => date('Y-m-d H:i:s'),
+                    'score_log_event_time' => $term_year . '-' . ($term_year + 1) . '年度',
+                    'score_log_event_intro' => '',
+                    'score_log_event_certify' => '教务处',
+                    'score_log_event_file' => '',
+                    'score_log_valid' => 1,
+                    'score_log_event_tag' => '',
+                    'teacher_name' => '自动获取',
+                ));
+                
+            } else if($mode == 'score'){
+                array_unshift($data[$average_point_item['student_id']]['data'], array(
+                    'score_log_judge' => $average_point_item['z_basic_score'],
+                    'score_type_id' => 'z_1_1_1'
+                ));
+            }
 
             $data[$average_point_item['student_id']]['score']['sum'] = 0.000;
             $data[$average_point_item['student_id']]['score']['d_sum'] = 0.000;
@@ -555,15 +551,7 @@ FILESUCCESS;
             }
 
             $data[$average_point_item['student_id']]['score']['sum'] = $data[$average_point_item['student_id']]['score']['d_sum'] + $data[$average_point_item['student_id']]['score']['w_sum'] + $data[$average_point_item['student_id']]['score']['z_sum'];
-
-            //评优资格标记
-            if ($data[$average_point_item['student_id']]['score']['d_sum'] < 12){
-                $data[$average_point_item['student_id']]['appraise'] = 0;
-            } else {
-                $data[$average_point_item['student_id']]['appraise'] = 1;
-            }
         }
-        var_dump($data);
         return $data;
     }
 
@@ -601,7 +589,7 @@ FILESUCCESS;
         
         $term_year = ($clean['YearTermNO'] - 1) / 2 + BASIC_TERM_ID;
         
-        if (!$this->input->get('student_id', TRUE)){
+        if (!$this->input->get('student_id', TRUE) || !ctype_digit($this->input->get('student_id', TRUE))){
             echo '<script>alert("请输入正确的学号");</script>';            
             return 0;
         } else {
@@ -777,6 +765,310 @@ FILESUCCESS;
         header("Pragma: no-cache");  
         $objWriter->save('php://output');
         
+    }
+    
+
+    /**    
+     *  @Purpose:    
+     *  生成班级积分列表/统计表格
+      * 
+     *  @Method Name:
+     *  getClassScoreExcel()    
+     *  @Parameter: 
+     *  
+     *  @Return: 
+     *  $class_info['school_name'] . '-' . $class_info['class_name'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细.xls';
+    */        
+    public function getClassScoreExcel(){
+        $this->load->library('session');
+        $this->load->library('PHPExcel');
+        $this->load->model('search_model');
+        
+        $excel = new PHPExcel();
+        $clean = array();
+        if (!$this->session->userdata('cookie')){
+            echo '<script>alert("抱歉，您的权限不足或登录信息已过期,请重新登录");window.parent.parent.location.href="' . base_url() . '";</script>';            
+            return 0;
+        }
+        
+        if (!$this->input->get('class_term_id', TRUE) || !ctype_digit($this->input->get('class_term_id', TRUE))){
+            echo '<script>alert("请选择正确的起始学期");</script>';            
+            return 0;
+        } else {
+            $clean['YearTermNO'] = $this->input->get('class_term_id', TRUE);
+        }
+//        $clean['YearTermNO'] = '13';
+        $term_year = ($clean['YearTermNO'] - 1) / 2 + BASIC_TERM_ID;
+        
+        if (!$this->input->get('class_id', TRUE) || !ctype_digit($this->input->get('class_id', TRUE))){
+            echo '<script>alert("请输入正确的班级id");</script>';            
+            return 0;
+        } else {
+            $clean['class_id'] = $this->input->get('class_id', TRUE);
+        }
+        
+//        $clean['class_id'] = '1204063';
+        if (!$class_info = $this->search_model->getClassInfo($clean['class_id'])){
+            echo '<script>alert("抱歉，未找到此班级");</script>';            
+            return 0;
+        }
+        
+        $data = $this->getClassScore($clean['YearTermNO'], $clean['class_id'], 'all');
+        
+        $objPHPExcel = new PHPExcel();
+        $objWriter = new PHPExcel_Writer_Excel5($objPHPExcel);     
+        
+        $clean['file_name'] = $class_info['school_name'] . '-' . $class_info['class_name'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细.xls';
+        
+        $objPHPExcel->getProperties()->setCreator('SUTACM *Chen')
+            ->setTitle($class_info['school_name'] . '-' . $class_info['class_name'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细');
+
+        
+        $objPHPExcel->createSheet(0);
+        $objPHPExcel->setActiveSheetIndex(0);
+        $objPHPExcel->getActiveSheet()->setTitle('明细表');
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('A1', '学院');
+        $objPHPExcel->getActiveSheet()->getStyle('A1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('A1')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('B1', $class_info['school_name']);
+        $objPHPExcel->getActiveSheet()->getStyle('B1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+    
+        $objPHPExcel->getActiveSheet()->setCellValue('C1', '班级');
+        $objPHPExcel->getActiveSheet()->getStyle('C1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('C1')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('D1', $class_info['class_name']);
+        $objPHPExcel->getActiveSheet()->getStyle('D1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+    
+        $objPHPExcel->getActiveSheet()->setCellValue('E1', '生成时间');
+        $objPHPExcel->getActiveSheet()->getStyle('E1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('E1')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('F1', date('Y-m-d H:i:s'));
+        $objPHPExcel->getActiveSheet()->getStyle('F1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+    
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('A2', '序号');
+        $objPHPExcel->getActiveSheet()->getStyle('A2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('A2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('B2', '学号');
+        $objPHPExcel->getActiveSheet()->getStyle('B2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('B2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('C2', '姓名');
+        $objPHPExcel->getActiveSheet()->getStyle('C2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('C2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('D2', '项目');
+        $objPHPExcel->getActiveSheet()->getStyle('D2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('D2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('E2', '分数');
+        $objPHPExcel->getActiveSheet()->getStyle('E2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('E2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('F2', '标签');
+        $objPHPExcel->getActiveSheet()->getStyle('F2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('F2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('G2', '说明');
+        $objPHPExcel->getActiveSheet()->getStyle('G2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('G2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('H2', '时间');
+        $objPHPExcel->getActiveSheet()->getStyle('H2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('H2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('I2', '证明人');
+        $objPHPExcel->getActiveSheet()->getStyle('I2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('I2')->getFont()->setBold(true);
+        
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('J2', '审核章');
+        $objPHPExcel->getActiveSheet()->getStyle('J2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('J2')->getFont()->setBold(true);
+
+        $i = 3;
+        $score_array = array();
+        foreach ($data as $data_key => $data_item){
+            $score_array[$data_key]['score'] = $data_item['score'];
+            $score_array[$data_key]['name'] = $data_item['name'];
+            foreach ($data_item['data'] as $data_data_item){
+                //第一列
+                $objPHPExcel->getActiveSheet()->setCellValue('A' . $i, ($i - 2));
+
+                //第二列
+                $objPHPExcel->getActiveSheet()->setCellValue('B' . $i, $data_key);
+
+                //第三列
+                $objPHPExcel->getActiveSheet()->setCellValue('C' . $i, $data_item['name']);
+
+                //第四列
+                $objPHPExcel->getActiveSheet()->setCellValue('D' . $i, $data_data_item['score_type_content']);
+
+                //第五列
+                $objPHPExcel->getActiveSheet()->setCellValue('E' . $i, $data_data_item['score_log_judge']);
+                
+                //第六列
+                $objPHPExcel->getActiveSheet()->setCellValue('F' . $i, $data_data_item['score_log_event_tag']);
+
+                //第七列
+                $objPHPExcel->getActiveSheet()->setCellValue('G' . $i, $data_data_item['score_log_event_intro']);
+
+                //第八列
+                $objPHPExcel->getActiveSheet()->setCellValue('H' . $i, $data_data_item['score_log_event_time']);
+
+                //第九列
+                $objPHPExcel->getActiveSheet()->setCellValue('I' . $i, $data_data_item['teacher_name']);
+
+                //设置高度
+                $objPHPExcel->getActiveSheet()->getRowDimension($i)->setRowHeight(30);
+
+                //居中
+                $objPHPExcel->getActiveSheet()->getStyle('A' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $objPHPExcel->getActiveSheet()->getStyle('B' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $objPHPExcel->getActiveSheet()->getStyle('C' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $objPHPExcel->getActiveSheet()->getStyle('D' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $objPHPExcel->getActiveSheet()->getStyle('E' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $objPHPExcel->getActiveSheet()->getStyle('F' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $objPHPExcel->getActiveSheet()->getStyle('G' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $objPHPExcel->getActiveSheet()->getStyle('H' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+                $objPHPExcel->getActiveSheet()->getStyle('I' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+
+                ++$i;
+            }
+        }
+        ++$i;
+
+        $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('C')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('D')->setWidth(25);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('E')->setWidth(30);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('F')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('G')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('H')->setWidth(20);
+
+        
+        //第二标签页
+        $objPHPExcel->createSheet(1);
+        $objPHPExcel->setActiveSheetIndex(1);
+        $objPHPExcel->getActiveSheet()->setTitle('分数统计');
+        $objPHPExcel->getActiveSheet()->mergeCells('F1:G1');
+        $objPHPExcel->getActiveSheet()->setCellValue('A1', '学院');
+        $objPHPExcel->getActiveSheet()->getStyle('A1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('A1')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('B1', $class_info['school_name']);
+        $objPHPExcel->getActiveSheet()->getStyle('B1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+    
+        $objPHPExcel->getActiveSheet()->setCellValue('C1', '班级');
+        $objPHPExcel->getActiveSheet()->getStyle('C1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('C1')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('D1', $class_info['class_name']);
+        $objPHPExcel->getActiveSheet()->getStyle('D1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+    
+        $objPHPExcel->getActiveSheet()->setCellValue('E1', '生成时间');
+        $objPHPExcel->getActiveSheet()->getStyle('E1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('E1')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('F1', date('Y-m-d H:i:s'));
+        $objPHPExcel->getActiveSheet()->getStyle('F1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+    
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('A2', '序号');
+        $objPHPExcel->getActiveSheet()->getStyle('A2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('A2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('B2', '学号');
+        $objPHPExcel->getActiveSheet()->getStyle('B2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('B2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('C2', '姓名');
+        $objPHPExcel->getActiveSheet()->getStyle('C2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('C2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('D2', '德育');
+        $objPHPExcel->getActiveSheet()->getStyle('D2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('D2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('E2', '文体');
+        $objPHPExcel->getActiveSheet()->getStyle('E2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('E2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('F2', '智育');
+        $objPHPExcel->getActiveSheet()->getStyle('F2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('F2')->getFont()->setBold(true);
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('G2', '总分');
+        $objPHPExcel->getActiveSheet()->getStyle('G2')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('G2')->getFont()->setBold(true);
+        
+        $i = 3;
+        foreach ($score_array as $score_key => $score_value){
+            //第一列
+            $objPHPExcel->getActiveSheet()->setCellValue('A' . $i, ($i - 2));
+
+            //第二列
+            $objPHPExcel->getActiveSheet()->setCellValue('B' . $i, $score_key);
+
+            //第三列
+            $objPHPExcel->getActiveSheet()->setCellValue('C' . $i, $score_value['name']);
+            
+            //第四列
+            if ($score_value['score']['d_sum'] >= 12){
+                $objPHPExcel->getActiveSheet()->setCellValue('D' . $i, $score_value['score']['d_sum']);
+            } else {
+                $objPHPExcel->getActiveSheet()->setCellValue('D' . $i, $score_value['score']['d_sum'] . '【无评优资格】');
+            }
+
+            //第五列
+            $objPHPExcel->getActiveSheet()->setCellValue('E' . $i, $score_value['score']['w_sum']);
+
+            //第六列
+            $objPHPExcel->getActiveSheet()->setCellValue('F' . $i, $score_value['score']['z_sum']);
+
+            //第七列
+            $objPHPExcel->getActiveSheet()->setCellValue('G' . $i, $score_value['score']['sum']);
+
+            //设置高度
+            $objPHPExcel->getActiveSheet()->getRowDimension($i)->setRowHeight(30);
+
+            //居中
+            $objPHPExcel->getActiveSheet()->getStyle('A' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('B' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('C' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('D' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('E' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('F' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('G' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+
+            ++$i;
+        }
+        
+        
+        $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setWidth(10);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('C')->setWidth(10);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('D')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('E')->setWidth(10);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('F')->setWidth(10);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('G')->setWidth(10);
+        
+        header("Content-Type: application/force-download");  
+        header("Content-Type: application/octet-stream");  
+        header("Content-Type: application/download");  
+        header('Content-Disposition:inline;filename="' . $clean['file_name'] . '"');  
+        header("Content-Transfer-Encoding: binary");  
+        header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");  
+        header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");  
+        header("Cache-Control: must-revalidate, post-check=0, pre-check=0");  
+        header("Pragma: no-cache");  
+        $objWriter->save('php://output');
     }
     
     /**    

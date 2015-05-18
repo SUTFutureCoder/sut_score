@@ -117,38 +117,50 @@ class Record_model extends CI_Model{
      *  @Parameter: 
      *  int $start_term 开始学期
      *  int $student_id 学生id
-     * 
+     *  char $mode      模式【'score'/'all'】
      *  @Return: 
      *  0 添加失败
      *  1 添加成功
     */
-    public function getStudentScoreList($start_term, $student_id){
+    public function getStudentScoreList($start_term, $student_id, $mode = 'all'){
         $this->load->database();
         $this->load->model('search_model');
         $class = $this->search_model->getStudentClassId($student_id);
-        $this->db->select('score_log.score_log_judge, score_log.score_log_event_tag, score_log.score_type_id,'
+        $data = array();
+        if ($mode == 'all'){
+            $this->db->select('score_log.score_log_judge, score_log.score_log_event_tag, score_log.score_type_id,'
                 . 'score_log.score_log_add_time, score_log.score_log_event_time, '
                 . 'score_log.score_log_event_intro, score_log.score_log_event_certify, '
                 . 'score_log.score_log_event_file, score_log.score_log_valid, teacher.teacher_name, score_type.score_type_content');
-        $this->db->where('(score_log.class_student_id = "' .$student_id . '" OR score_log.class_student_id = "' . $class . '") AND score_log.score_log_valid = "1"');
-        
-        $data = array();
-        
-        $start_time = $start_term . '-09-01';
-        $end_time   = $start_term + 1 . '-08-31';
-        $this->db->where('score_log.score_log_event_time >=', $start_time);
-        $this->db->where('score_log.score_log_event_time <=', $end_time);
-        
-        $this->db->order_by('score_log.score_type_id asc, score_log.score_log_event_time asc');
-        $this->db->from('score_log');
-        $this->db->join('score_type', 'score_type.score_type_id = score_log.score_type_id');
-        $this->db->join('teacher', 'teacher.teacher_id = score_log.teacher_id');
-        
-        $result = $this->db->get();
+            $this->db->where('(score_log.class_student_id = "' .$student_id . '" OR score_log.class_student_id = "' . $class . '") AND score_log.score_log_valid = "1"');
+
+            $start_time = $start_term . '-09-01';
+            $end_time   = $start_term + 1 . '-08-31';
+            $this->db->where('score_log.score_log_event_time >=', $start_time);
+            $this->db->where('score_log.score_log_event_time <=', $end_time);
+
+            $this->db->order_by('score_log.score_type_id asc, score_log.score_log_event_time asc');
+            $this->db->from('score_log');
+            $this->db->join('score_type', 'score_type.score_type_id = score_log.score_type_id');
+            $this->db->join('teacher', 'teacher.teacher_id = score_log.teacher_id');
+
+            $result = $this->db->get();
+        } else if ($mode = 'score'){
+            $this->db->select('score_log_judge, score_type_id');  
+            
+            $start_time = $start_term . '-09-01';
+            $end_time   = $start_term + 1 . '-08-31';
+            $this->db->where('score_log_event_time >=', $start_time);
+            $this->db->where('score_log_event_time <=', $end_time);
+            $this->db->where('(class_student_id = "' . $student_id . '" OR class_student_id = "' . $class . '") AND score_log_valid = "1"');
+            $this->db->order_by('score_type_id asc, score_log_event_time asc');
+            $result = $this->db->get('score_log');
+        }
         foreach ($result->result_array() as $value){
             $data[] = $value;
         }
         return $data;
+        
     }
     
 }
