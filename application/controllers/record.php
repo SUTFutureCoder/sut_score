@@ -257,7 +257,7 @@ FILESUCCESS;
         
         $clean['EndYearTermNO'] = (int)$clean['YearTermNO'] + 1;
         
-        if (!$this->input->post('student_id', TRUE)){
+        if (!$this->input->post('student_id', TRUE) || !ctype_digit($this->input->post('student_id', TRUE))){
             echo json_encode(array('code' => -2, 'message' => '请输入正确的学号'));
             return 0;
         } else {
@@ -273,6 +273,52 @@ FILESUCCESS;
         
         $data = $this->getStudentScore($clean['YearTermNO'], $class, $clean['ByStudentNO']);
         
+        echo json_encode(array('code' => 1, 'data' => $data));
+        return 0;
+    }
+    
+    
+    /**    
+     *  @Purpose:    
+     *  查询班级记录列表    
+     *  @Method Name:
+     *  getClassScoreLogList()    
+     *  @Parameter: 
+     *  POST student_term_id    学年id
+     *  POST class_id           班级id
+     *  @Return: 
+     *  
+    */
+    public function getClassScoreLogList(){
+        $this->load->library('session');
+        $this->load->library('authorizee');
+        $this->load->model('search_model');
+        $this->load->model('record_model');
+        
+        if (!$this->session->userdata('cookie')){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
+            return 0;
+        }
+        
+        if (!$this->input->post('class_term_id', TRUE) || !ctype_digit($this->input->post('class_term_id', TRUE))){
+            echo json_encode(array('code' => -2, 'message' => '请选择正确的起始学期'));
+            return 0;
+        } else {
+            $clean['YearTermNO'] = $this->input->post('class_term_id', TRUE);
+        }
+//        $clean['YearTermNO'] = '13';
+        $clean['EndYearTermNO'] = (int)$clean['YearTermNO'] + 1;
+        
+        if (!$this->input->post('class_id', TRUE) || !ctype_digit($this->input->post('class_id', TRUE))){
+            echo json_encode(array('code' => -2, 'message' => '请输入正确的班级id'));
+            return 0;
+        } else {
+           $class = $this->input->post('class_id', TRUE);
+        }
+        
+//        $class = '1204063';
+        $data = $this->getClassScore($clean['YearTermNO'], $class);
+                
         echo json_encode(array('code' => 1, 'data' => $data));
         return 0;
     }
@@ -398,6 +444,126 @@ FILESUCCESS;
             $data['appraise'] = 1;
         }
         
+        return $data;
+    }
+
+    
+    /**    
+     *  @Purpose:    
+     *  获取班级积分
+      * 
+     *  @Method Name:
+     *  getClassScore($year_term_no, $class)
+     *  @Parameter: 
+     *  int $year_term_no   起始学期id
+     *  int $class          班级id
+     * 
+     *  @Return: 
+     *  array $data         积分明细
+    */ 
+    private function getClassScore($year_term_no, $class){
+        $this->load->library('session');
+        $this->load->model('record_model');
+        header("Content-type:text/html;charset=utf-8");
+        $end_year_term_no = $year_term_no + 1;
+        
+        //cURL请求
+        $url = BASE_SCHOOL_URL . 'ACTIONCLASSJDQUERY.APPPROCESS?mode=2&query=1&xuanzelei=总成绩';
+        
+        $ch = curl_init();
+        $postField = 'FirstYearTermNO=' . $year_term_no . '&EndYearTermNO=' . $end_year_term_no . '&xuanze=1&ClassNO=' . $class;
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postField);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        $result = iconv('gb2312', 'utf-8//IGNORE', $result);
+        $result = explode("\n", strip_tags($result));
+        
+        
+        $result_count = count($result) - 14;
+        $average_point = array();
+        $n = 0;
+        
+        for ($i = 84; $i < $result_count; $i++, $n++){
+            while (trim($result[$i]) == ''){
+                $i++;
+            }                   
+            $average_point[$n]['student_id'] = trim($result[++$i]);
+            $average_point[$n]['student_name'] = trim($result[++$i]);
+            $i += 5;
+            while (trim($result[$i]) == ''){
+                $i++;
+            }      
+            $average_point[$n]['average_point'] = trim($result[$i]);
+            //计算绩点对应智育基础分    60+(x-2.0)/0.2
+            $average_point[$n]['z_basic_score'] = (60 + ($average_point[$n]['average_point'] - 2.0) / 0.2) * 0.7;
+            $i += 5;
+        }
+        
+        $data = array();
+        //还原真实查询起始年份($i - BASIC_TERM_ID) * 2 + 1
+        $term_year = ($year_term_no - 1) / 2 + BASIC_TERM_ID;
+        foreach ($average_point as $average_point_item){
+            $data[$average_point_item['student_id']]['name'] = $average_point_item['student_name'];
+            $data[$average_point_item['student_id']]['data'] = $this->record_model->getStudentScoreList($term_year, $average_point_item['student_id']);
+            array_unshift($data[$average_point_item['student_id']]['data'], array(
+                'score_type_id' => 'z_1_1_1',
+                'score_log_judge' => $average_point_item['z_basic_score'],
+                'score_type_content' => '智育基础分',
+                'score_log_add_time' => date('Y-m-d H:i:s'),
+                'score_log_event_time' => $term_year . '-' . ($term_year + 1) . '年度',
+                'score_log_event_intro' => '',
+                'score_log_event_certify' => '教务处',
+                'score_log_event_file' => '',
+                'score_log_valid' => 1,
+                'score_log_event_tag' => '',
+                'teacher_name' => '自动获取',
+            ));
+
+            $data[$average_point_item['student_id']]['score']['sum'] = 0.000;
+            $data[$average_point_item['student_id']]['score']['d_sum'] = 0.000;
+            $data[$average_point_item['student_id']]['score']['z_sum'] = 0.000;
+            $data[$average_point_item['student_id']]['score']['w_sum'] = 0.000;
+            foreach ($data[$average_point_item['student_id']]['data'] as $item){
+                switch ($item['score_type_id'][0]){
+                    case 'd':
+                        $data[$average_point_item['student_id']]['score']['d_sum'] += $item['score_log_judge'];
+                        break;
+                    case 'w':
+                        $data[$average_point_item['student_id']]['score']['w_sum'] += $item['score_log_judge'];
+                        break;
+                    case 'z':
+                        $data[$average_point_item['student_id']]['score']['z_sum'] += $item['score_log_judge'];
+                        break;
+                }
+            }
+
+            if ($data[$average_point_item['student_id']]['score']['d_sum'] >= 20){
+                $data[$average_point_item['student_id']]['score']['d_sum'] = 20;
+            }
+
+            if ($data[$average_point_item['student_id']]['score']['w_sum'] >= 10){
+                $data[$average_point_item['student_id']]['score']['w_sum'] = 10;
+            }
+
+            if ($data[$average_point_item['student_id']]['score']['z_sum'] >= 70){
+                $data[$average_point_item['student_id']]['score']['z_sum'] = 70;
+            }
+
+            $data[$average_point_item['student_id']]['score']['sum'] = $data[$average_point_item['student_id']]['score']['d_sum'] + $data[$average_point_item['student_id']]['score']['w_sum'] + $data[$average_point_item['student_id']]['score']['z_sum'];
+
+            //评优资格标记
+            if ($data[$average_point_item['student_id']]['score']['d_sum'] < 12){
+                $data[$average_point_item['student_id']]['appraise'] = 0;
+            } else {
+                $data[$average_point_item['student_id']]['appraise'] = 1;
+            }
+        }
+        var_dump($data);
         return $data;
     }
 
@@ -548,18 +714,47 @@ FILESUCCESS;
             $objPHPExcel->getActiveSheet()->getRowDimension($i)->setRowHeight(30);
             
             //居中
-            $objPHPExcel->getActiveSheet()->getStyle('A' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
-            $objPHPExcel->getActiveSheet()->getStyle('B' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
-            $objPHPExcel->getActiveSheet()->getStyle('C' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
-            $objPHPExcel->getActiveSheet()->getStyle('D' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
-            $objPHPExcel->getActiveSheet()->getStyle('E' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
-            $objPHPExcel->getActiveSheet()->getStyle('F' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
-            $objPHPExcel->getActiveSheet()->getStyle('G' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
-            $objPHPExcel->getActiveSheet()->getStyle('H' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);;
+            $objPHPExcel->getActiveSheet()->getStyle('A' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('B' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('C' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('D' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('E' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('F' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('G' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+            $objPHPExcel->getActiveSheet()->getStyle('H' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER)->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
 
             ++$i;
         }
         
+        ++$i;
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('A' . $i, '总分');
+        $objPHPExcel->getActiveSheet()->setCellValue('B' . $i, $data['score']['sum']);
+        $objPHPExcel->getActiveSheet()->setCellValue('C' . $i, '德育');
+        if ($data['score']['d_sum'] >= 12){
+            $objPHPExcel->getActiveSheet()->setCellValue('D' . $i, $data['score']['d_sum']);
+        } else {
+            $objPHPExcel->getActiveSheet()->setCellValue('D' . $i, $data['score']['d_sum'] . '【无评优资格】');
+        }
+        
+        $objPHPExcel->getActiveSheet()->setCellValue('E' . $i, '文体');
+        $objPHPExcel->getActiveSheet()->setCellValue('F' . $i, $data['score']['w_sum']);
+        $objPHPExcel->getActiveSheet()->setCellValue('G' . $i, '智育');
+        $objPHPExcel->getActiveSheet()->setCellValue('H' . $i, $data['score']['z_sum']);
+        
+        //居中
+        $objPHPExcel->getActiveSheet()->getStyle('A' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('A' . $i)->getFont()->setBold(true);
+        $objPHPExcel->getActiveSheet()->getStyle('B' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('C' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('C' . $i)->getFont()->setBold(true);
+        $objPHPExcel->getActiveSheet()->getStyle('D' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('E' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('E' . $i)->getFont()->setBold(true);
+        $objPHPExcel->getActiveSheet()->getStyle('F' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('G' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+        $objPHPExcel->getActiveSheet()->getStyle('G' . $i)->getFont()->setBold(true);
+        $objPHPExcel->getActiveSheet()->getStyle('H' . $i)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
         
         $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setWidth(20);
         $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setWidth(20);

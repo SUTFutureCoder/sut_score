@@ -83,12 +83,14 @@
                         </select>
                     </div>
                     <button class="form-control btn btn-primary" id="class_submit" onclick="getClassPointList()">查询</button>
+                    <hr/>
+                    <button class="form-control btn btn-primary" id="export_class_excel_button" onclick="exportExcel(this, 'class')">导出Excel表格</button>
                     <!--
                     <hr>
                     <button class="form-control btn btn-primary">导出分项表格</button>
                     <button class="form-control btn btn-primary">导出合计表格</button> -->
                 </form>
-                <div class="col-sm-12" id='result'>
+                <div class="col-sm-12" id='class_result'>
                     <hr>
                 </div>
             </div>
@@ -137,7 +139,6 @@
                             student_accordion.append(content);
                         });
                         
-                        $("#accordion").html(result['data']);
                         break;
                     default:
                         alert(result['message']);
@@ -186,6 +187,51 @@
                 $("#export_excel").html('<iframe src="<?= base_url('index.php?c=record&m=getStudentScoreExcel') ?>&student_term_id=' + $("#student_term_id").val() + '&student_id=' + $("#student_id").val() +'"></iframe>');
             }
             
+        }
+        
+        //导出班级
+        function getClassPointList(){
+            $("#class_submit").attr("disabled", "disabled").html("正在提交中，请稍后");
+            $.post(
+                '<?= base_url('index.php/record/getClassScoreLogList')?>',
+                {
+                    class_term_id   : $("#form_search_term").val(),
+                    class_id        : $("#form_search_class").val(),
+                },
+                function (data){
+                    var data = JSON.parse(data);
+                    switch (result['code'])
+                    {
+                        case 1:
+                            //填充主体
+                            var class_result = $("#class_result");
+                            class_result.html('<hr>');
+                            var content = '<table class="table table-striped table-hover"><tr><th>学号</th><th>姓名</th><th>类型</th><th>标签</th><th>分数</th><th>证明</th></tr><tbody>';
+                            $.each(result['data'], function(i, item){
+                                for (var student_id in result['data']){
+                                    content += '<tr><th scope="row">' + student_id + '</th><td>' + result['data'][student_id][''] + '</td></tr>';
+                                };
+                                
+                                if (item['score_log_event_file'] != ""){
+                                    content += '<?= base_url()?>upload/' + item['score_log_event_file']  + '</td></tr><tr><th scope="row">变更</th><td>Larry</td></tr></tbody></table></div></div></div>';
+                                } else {
+                                    content += '</td></tr><tr><th scope="row">变更</th><td>Larry</td></tr></tbody></table></div></div></div>';
+                                }   
+
+                                
+                            });
+                            content += '</tbody></table>';
+                            class_result.append(content);
+                            
+                            break;
+                        default:
+                            alert(result['message']);
+                            break;
+                    }
+                    
+                    $("#class_submit").removeAttr("disabled").html("查询");
+                }
+            )
         }
     </script>
 </body>

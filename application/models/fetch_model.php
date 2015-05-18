@@ -37,7 +37,6 @@ class Fetch_model extends CI_Model{
         
         $this->db->empty_table('school_info');
         $this->db->empty_table('major_info');
-        $this->db->empty_table('class_info');
         
         try{
             $school_key = array('school_id', 'school_name');
