@@ -48,6 +48,12 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
+        
+        if (!$this->session->userdata('cookie')){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
+            return 0;
+        }
         $this->load->view('record_view', array('rule_item' => $this->record_model->getRuleList('d')));
     }
     
@@ -65,6 +71,11 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
+        if (!$this->session->userdata('cookie')){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
+            return 0;
+        }
         $this->load->view('record_view', array('rule_item' => $this->record_model->getRuleList('w')));
     }
     
@@ -82,6 +93,13 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
+        
+        if (!$this->session->userdata('cookie')){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
+            return 0;
+        }
+        
         $this->load->view('record_view', array('rule_item' => $this->record_model->getRuleList('z')));
     }
     
@@ -210,7 +228,8 @@ FILESUCCESS;
         $this->load->library('session');
         $this->load->model('search_model');
         if (!$this->session->userdata('cookie')){
-            echo json_encode(array('code' => -2, 'message' => '抱歉，您的权限不足或登录信息已过期,请重新登录'));
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
             return 0;
         }
         

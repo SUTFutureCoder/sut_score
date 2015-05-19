@@ -20,49 +20,27 @@ class Authorizee{
      *  @Purpose:    
      *  检查权限   
      *  @Method Name:
-     *  CheckAuthorizee($user_role)    
+     *  checkAuthorizee($user_id, $right_name)    
      *  @Parameter: 
-     *  $user_role 用户角色 
+     *  $user_id    用户角色
+     *  $right_name 权限名字
      *  @Return: 
      *  1 成功
      *  0 失败
     */ 
-    public function CheckAuthorizee($user_role, $role_authorizee){
+    public function checkAuthorizee($user_id, $right_name){
         if (!self::$_ci){
             //在自定义类库中初始化CI资源
             self::$_ci =& get_instance();       
         }
         
-        self::$_ci->load->library('cache');
+        self::$_ci->load->database();
+        self::$_ci->db->where('re_role_id.user_id', $user_id);
+        self::$_ci->db->where('role.role_index', $right_name);
+        self::$_ci->db->from('re_role_id');
+        self::$_ci->db->join('role', 're_role_id.role_id = role.role_id');
+        $result = self::$_ci->db->get();
         
-        $mc = self::$_ci->cache->memcache();
-        
-        if (!($data = $mc->get('ida_' . self::$_ci->cache->getNS('authorizee') . '_role_name_' . $user_role))){
-            self::$_ci->load->library('database');
-            $db = self::$_ci->database->conn();
-            $cursor = $db->ida->role->find(array('role_name' => $user_role), array('role_right' => 1));
-            
-            foreach ($cursor as $id => $value){
-                $data = $value;
-            }
-            
-            if (isset($user_role['role_right'])){
-                //设置memcache,防止污染memcache
-                $mc->set('ida_' . self::$_ci->cache->getNS('authorizee') . '_role_name_' . $user_role, $data['role_right']);
-            }
-                    
-            if (in_array($role_authorizee, $data['role_right'])){
-                return 1;
-            } else {
-                return 0;
-            }
-            
-        } else {
-            if (in_array($role_authorizee, $data)){
-                return 1;
-            } else {
-                return 0;
-            }
-        }
+        return $result->num_rows();
     }
 }

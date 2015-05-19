@@ -45,7 +45,7 @@
                         </div>
                     
                         <div title="权限相关">
-                            <a href="javascript:void(0);" src="<?= base_url('index.php/admin_add_user')?>" class="cs-navi-tab">授权用户</a></p>
+                            <a href="javascript:void(0);" src="<?= base_url('index.php/right/showAuthorizeeSet')?>" class="cs-navi-tab">授权用户</a></p>
                         </div>       
 		</div>
 	</div>
