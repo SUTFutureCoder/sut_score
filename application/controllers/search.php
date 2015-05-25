@@ -31,10 +31,17 @@ class Search extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         
+        if (strlen($this->session->userdata('user_id')) != 5){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足");</script>';            
+            return 0;
+        }
+        
+        
 //        if (!$this->session->userdata('cookie') || !$this->authorizee->CheckAuthorizee($this->session->userdata('user_role'), 'showSearchStudent')){
         if (!$this->session->userdata('cookie')){
             header("Content-type: text/html; charset=utf-8");
-            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
+            echo '<script>alert("抱歉，您的登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
             return 0;
         }
         $this->load->view('search_student_view');
@@ -54,6 +61,10 @@ class Search extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
                
+        if (strlen($this->session->userdata('user_id')) != 5){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
+            return 0;
+        }
         
         //cURL请求
         $url = BASE_SCHOOL_URL . 'ACTIONQUERYSTUDENTBYSTUDENTNO.APPPROCESS?mode=2';
@@ -99,6 +110,13 @@ class Search extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('search_model');
+        
+        if (strlen($this->session->userdata('user_id')) != 5){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足");</script>';            
+            return 0;
+        }
+        
 //        if (!$this->session->userdata('cookie') || !$this->authorizee->CheckAuthorizee($this->session->userdata('user_role'), 'showSearchStudent')){
         if (!$this->session->userdata('cookie')){
             header("Content-type: text/html; charset=utf-8");
@@ -134,9 +152,13 @@ class Search extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         
+        if (strlen($this->session->userdata('user_id')) != 5){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
+            return 0;
+        }
+        
         if (!$this->session->userdata('cookie')){
-            header("Content-type: text/html; charset=utf-8");
-            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的登录信息已过期'));
             return 0;
         }
         
@@ -206,6 +228,11 @@ class Search extends CI_Controller{
         $this->load->library('authorizee');
         $this->load->model('search_model');
         
+        if (strlen($this->session->userdata('user_id')) != 5){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足");</script>';            
+            return 0;
+        }
 //        if (!$this->session->userdata('cookie') || !$this->authorizee->CheckAuthorizee($this->session->userdata('user_role'), 'showSearchStudent')){
         if (!$this->session->userdata('cookie')){
             header("Content-type: text/html; charset=utf-8");
@@ -241,6 +268,11 @@ class Search extends CI_Controller{
     public function getClassPointStatis(){
         $this->load->library('session');
         $this->load->library('authorizee');
+        
+        if (strlen($this->session->userdata('user_id')) != 5){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
+            return 0;
+        }
         
         if (!$this->session->userdata('cookie')){
             echo json_encode(array('code' => -1, 'message' => '您的会话数据已过期，请重新登录'));
@@ -296,6 +328,12 @@ class Search extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         
+        if (strlen($this->session->userdata('user_id')) != 5){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足");</script>';            
+            return 0;
+        }
+        
 //        if (!$this->session->userdata('cookie') || !$this->authorizee->CheckAuthorizee($this->session->userdata('user_role'), 'showSearchStudent')){
         if (!$this->session->userdata('cookie')){
             header("Content-type: text/html; charset=utf-8");
@@ -322,6 +360,11 @@ class Search extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('search_model');
+        
+        if (strlen($this->session->userdata('user_id')) != 5){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
+            return 0;
+        }
         
         if (!$this->session->userdata('cookie')){
             echo json_encode(array('code' => -2, 'message' => '抱歉，您的权限不足或登录信息已过期'));
@@ -411,6 +454,11 @@ class Search extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         
+        if (strlen($this->session->userdata('user_id')) != 5){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足");</script>';            
+            return 0;
+        }
 //        if (!$this->session->userdata('cookie') || !$this->authorizee->CheckAuthorizee($this->session->userdata('user_role'), 'showSearchStudent')){
         if (!$this->session->userdata('cookie')){
             header("Content-type: text/html; charset=utf-8");
@@ -436,6 +484,11 @@ class Search extends CI_Controller{
     public function getStudentMark(){
         $this->load->library('session');
         $this->load->library('authorizee');
+        
+        if (strlen($this->session->userdata('user_id')) != 5){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
+            return 0;
+        }
         
         if (!$this->session->userdata('cookie')){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
@@ -490,6 +543,11 @@ class Search extends CI_Controller{
     public function ajaxGetStudentClassName(){
         $this->load->library('session');
         $this->load->model('search_model');
+        if (strlen($this->session->userdata('user_id')) != 5){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
+            return 0;
+        }
+        
         if (!$this->session->userdata('cookie')){
             echo json_encode(array('code' => -2, 'message' => '抱歉，您的权限不足或登录信息已过期,请重新登录'));
             return 0;

@@ -18,100 +18,31 @@ class User_model extends CI_Model{
         parent::__construct();
     }
     
-    static private $_db;
     /**    
      *  @Purpose:    
-     *  添加用户    
+     *  更新教师信息
      *  @Method Name:
-     *  addUser($user_info)    
+     *  updateTeacherInfo($teacher_id, $teacher_name, $teacher_password)
      *  @Parameter: 
-     *  array  $user_info 用户信息
+     *  string $teacher_id      教师id
+     *  string $teacher_name    教师姓名
+     *  string $teacher_password教师密码
      * 
      *  @Return: 
-     *  
+     *  1   更新成功
     */
-    public function addUser($user_info){
-        $this->load->library('database');
-        if (!isset(self::$_db)){
-            self::$_db = $this->database->conn();
-        }
-        
-        try{
-            self::$_db->ida->user->insert($user_info, array('safe' => TRUE));            
-            $result[0] = 1;
-            $result[1] = $user_info['_id'];
+    public function updateTeacherInfo($teacher_id, $teacher_name, $teacher_password){
+        $this->load->database();
+        try {
+            $this->db->replace('teacher', array(
+                'teacher_id'    =>  $teacher_id,
+                'teacher_name'  =>  $teacher_name,
+                'teacher_password' => $teacher_password
+            ));
         } catch (Exception $ex) {
             return $ex->getMessage();
         }
-        return $result;
-    }
-    
-    /**    
-     *  @Purpose:    
-     *  验证用户登录密码    
-     *  @Method Name:
-     *  checkPassword($user_telephone, $user_password)    
-     *  @Parameter: 
-     *  array $user_telephone 用户手机号
-     *  array $user_password 密码
-     * 
-     *  @Return: 
-     *  array $data 用户信息
-     *  bool false 无此用户或密码错误
-    */
-    public function checkPassword($user_telephone, $user_password){
-        $this->load->library('database');
-        $this->load->library('encrypt');
-        if (!isset(self::$_db)){
-            self::$_db = $this->database->conn();
-        }
         
-        $cursor = self::$_db->ida->user->find(array('user_telephone' => $user_telephone));
-        
-        foreach ($cursor as $key => $value){
-            //只匹配一个
-            $data = $value;
-            if (!$key){
-                return FALSE;
-            } else {
-                $data['_id'] = $key;
-            }
-        }
-        
-        if ($user_password != $this->encrypt->decode($data['user_password'])){
-            return FALSE;
-        } else {
-            return $data;
-        }
-    }
-    
-    /**    
-     *  @Purpose:    
-     *  检查用户是否已经注册    
-     *  @Method Name:
-     *  checkUserExist($user_telephone)    
-     *  @Parameter: 
-     *  string $user_telephone 用户手机号
-     * 
-     *  @Return: 
-     *  bool 0 此用户未注册
-     *  bool 1 此用户已经注册
-    */
-    public function checkUserExist($user_telephone){
-        $this->load->library('database');
-        if (!isset(self::$_db)){
-            self::$_db = $this->database->conn();
-        }
-        
-        $cursor = self::$_db->ida->user->find(array('user_telephone' => $user_telephone));
-        foreach ($cursor as $key => $value){
-            
-        }
-        if (!isset($key)){
-            return 0;
-        } else {
-            return 1;
-        }
-        
+        return 1;
     }
 }

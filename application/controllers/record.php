@@ -48,10 +48,14 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
+        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+            echo '<script>alert("抱歉，您的权限不足");</script>';            
+            return 0;
+        }
         
         if (!$this->session->userdata('cookie')){
             header("Content-type: text/html; charset=utf-8");
-            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
+            echo '<script>alert("抱歉，登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
             return 0;
         }
         $this->load->view('record_view', array('rule_item' => $this->record_model->getRuleList('d')));
@@ -71,6 +75,10 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
+        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+            echo '<script>alert("抱歉，您的权限不足");</script>';            
+            return 0;
+        }
         if (!$this->session->userdata('cookie')){
             header("Content-type: text/html; charset=utf-8");
             echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
@@ -93,6 +101,10 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
+        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+            echo '<script>alert("抱歉，您的权限不足");</script>';            
+            return 0;
+        }
         
         if (!$this->session->userdata('cookie')){
             header("Content-type: text/html; charset=utf-8");
@@ -149,6 +161,11 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->model('record_model');
         header("Content-type: text/html; charset=utf-8");
+        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+            echo '<script>alert("抱歉，您的权限不足");</script>';            
+            return 0;
+        }
+        
         if (!$this->session->userdata('cookie')){
             echo '<script>alert("抱歉，您的权限不足或登录信息已过期,请重新登录");window.parent.parent.location.href="' . base_url() . '";</script>';            
             return 0;
@@ -227,9 +244,16 @@ FILESUCCESS;
     public function showGetScoreLog(){
         $this->load->library('session');
         $this->load->model('search_model');
+        
+        if (strlen($this->session->userdata('user_id')) != 5){
+            header("Content-type: text/html; charset=utf-8");
+            echo '<script>alert("抱歉，您的权限不足");</script>';            
+            return 0;
+        }
+        
         if (!$this->session->userdata('cookie')){
             header("Content-type: text/html; charset=utf-8");
-            echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
+            echo '<script>alert("抱歉，您的登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
             return 0;
         }
         
@@ -261,6 +285,11 @@ FILESUCCESS;
         $this->load->library('authorizee');
         $this->load->model('search_model');
         $this->load->model('record_model');
+        
+        if (strlen($this->session->userdata('user_id')) != 5){
+            echo json_encode(array('code' => -1, 'message' => '抱歉您的权限不足'));
+            return 0;
+        }
         
         if (!$this->session->userdata('cookie')){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
@@ -313,6 +342,11 @@ FILESUCCESS;
         $this->load->library('authorizee');
         $this->load->model('search_model');
         $this->load->model('record_model');
+        
+        if (strlen($this->session->userdata('user_id')) != 5){
+            echo json_encode(array('code' => -1, 'message' => '抱歉您的权限不足'));
+            return 0;
+        }
         
         if (!$this->session->userdata('cookie')){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
@@ -469,7 +503,7 @@ FILESUCCESS;
      *  @Return: 
      *  array $data         积分明细
     */ 
-    public function getClassScore($year_term_no = '13', $class = '1204063', $mode = 'score'){
+    private function getClassScore($year_term_no, $class, $mode = 'score'){
         $this->load->library('session');
         $this->load->model('record_model');
         $end_year_term_no = $year_term_no + 1;
@@ -591,11 +625,15 @@ FILESUCCESS;
         $this->load->library('PHPExcel');
         $this->load->model('search_model');
         
+        if (strlen($this->session->userdata('user_id')) != 5){
+            echo '<script>alert("抱歉，抱歉您的权限不足");</script>';
+            return 0;
+        }
         
         $excel = new PHPExcel();
         $clean = array();
         if (!$this->session->userdata('cookie')){
-            echo '<script>alert("抱歉，您的权限不足或登录信息已过期,请重新登录");window.parent.parent.location.href="' . base_url() . '";</script>';            
+            echo '<script>alert("抱歉，您的登录信息已过期,请重新登录");window.parent.parent.location.href="' . base_url() . '";</script>';            
             return 0;
         }
         
@@ -802,11 +840,15 @@ FILESUCCESS;
         $this->load->library('session');
         $this->load->library('PHPExcel');
         $this->load->model('search_model');
+        if (strlen($this->session->userdata('user_id')) != 5){
+            echo '<script>alert("抱歉，抱歉您的权限不足");</script>';
+            return 0;
+        }
         
         $excel = new PHPExcel();
         $clean = array();
         if (!$this->session->userdata('cookie')){
-            echo '<script>alert("抱歉，您的权限不足或登录信息已过期,请重新登录");window.parent.parent.location.href="' . base_url() . '";</script>';            
+            echo '<script>alert("抱歉，您的登录信息已过期,请重新登录");window.parent.parent.location.href="' . base_url() . '";</script>';            
             return 0;
         }
         
@@ -962,14 +1004,16 @@ FILESUCCESS;
         }
         ++$i;
 
-        $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setWidth(10);
         $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setWidth(20);
-        $objPHPExcel->getActiveSheet()->getColumnDimension('C')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('C')->setWidth(10);
         $objPHPExcel->getActiveSheet()->getColumnDimension('D')->setWidth(25);
-        $objPHPExcel->getActiveSheet()->getColumnDimension('E')->setWidth(30);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('E')->setWidth(10);
         $objPHPExcel->getActiveSheet()->getColumnDimension('F')->setWidth(20);
         $objPHPExcel->getActiveSheet()->getColumnDimension('G')->setWidth(20);
         $objPHPExcel->getActiveSheet()->getColumnDimension('H')->setWidth(20);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('I')->setWidth(10);
+        $objPHPExcel->getActiveSheet()->getColumnDimension('J')->setWidth(10);
 
         
         //第二标签页
@@ -1112,8 +1156,14 @@ FILESUCCESS;
     public function setScoreLog(){
         $this->load->library('session');
         $this->load->model('record_model');
+        
+        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
+            return 0;
+        }
+        
         if (!$this->session->userdata('cookie')){
-            echo json_encode(array('code' => -2, 'message' => '抱歉，您的权限不足或登录信息已过期,请重新登录'));
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的登录信息已过期,请重新登录'));
             return 0;
         }
         $data = array();

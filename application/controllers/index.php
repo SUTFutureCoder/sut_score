@@ -70,7 +70,9 @@ class Index extends CI_Controller{
     public function PassCheck(){
         $this->load->library('session');
         $this->load->library('encrypt');
+        $this->load->library('authorizee');
         $this->load->model('user_model');
+        
         
         $clean = array();
         if (!$this->input->post('WebUserNO', TRUE) || !ctype_digit($this->input->post('WebUserNO', TRUE))){
@@ -84,6 +86,16 @@ class Index extends CI_Controller{
         $url = BASE_SCHOOL_URL . 'ACTIONLOGON.APPPROCESS?mode=4';
         $clean['Password'] = $this->input->post('Password', TRUE);
         $clean['Agnomen'] = $this->input->post('Agnomen', TRUE);
+        
+        //本地数据库权限检查
+        if($role_id = $this->authorizee->getAuthorizeeId($clean['WebUserNO'])){
+            //为0则只读，只能读取除平均绩点外的数据
+             if ($role_id == 3){
+                //ban
+                echo json_encode(array('code' => -1, 'error' => '抱歉，您的账户已被封禁'));
+                return 0;
+            }
+        }
         
         $ch = curl_init();
         $postField = 'WebUserNO=' . $clean['WebUserNO'] . '&Password=' . $clean['Password'] . '&Agnomen=' . $clean['Agnomen'];
@@ -111,8 +123,16 @@ class Index extends CI_Controller{
         $clean['teacher_id'] = htmlentities(iconv('gb2312', 'utf-8//IGNORE', $clean['WebUserNO']), ENT_QUOTES);
         $clean['teacher_password'] = $this->encrypt->encode($clean['Password']);
         
+        if ($role_id){
+            if (1 != $this->user_model->updateTeacherInfo($clean['teacher_id'], $clean['teacher_name'], $clean['teacher_password'])){
+                echo json_encode(array('code' => -1, 'error' => '抱歉，您的信息存储错误'));
+                return 0;
+            }
+        }
+        
         $this->session->set_userdata('user_name', iconv('gb2312', 'utf-8//IGNORE', $result_array[0]));
         $this->session->set_userdata('user_id', iconv('gb2312', 'utf-8//IGNORE', $clean['WebUserNO']));
+        $this->session->set_userdata('role_id', $role_id);
         echo json_encode(array('code' => 1));
     }
 }

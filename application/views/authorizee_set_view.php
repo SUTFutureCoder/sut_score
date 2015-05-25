@@ -18,10 +18,9 @@
             <label for="role_list" class="col-sm-2 control-label">权限</label>
             <div class="col-sm-10">
                 <select class="form-control" id="role_list">
-                    <option value="0">全部年级</option>
-                    <?php for($i = date('Y'); $i >= ORIGIN_GRADE; $i--): ?>
-                    <option value="<?= substr($i, 2, 2) ?>"><?= $i ?></option>
-                    <?php endfor; ?>
+                    <?php foreach ($right_list as $item): ?>
+                        <option value="<?= $item['role_id'] ?>"><?= $item['role_name'] ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
         </div>

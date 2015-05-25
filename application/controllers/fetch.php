@@ -30,8 +30,15 @@ class Fetch extends CI_Controller{
     public function fetchStudentBasicInfo(){
         $this->load->library('session');
         $this->load->library('authorizee');
+        
         set_time_limit(1800);
         header("Content-type:text/html;charset=utf-8");
+        
+        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+            echo '<p style="color:red">抱歉您的权限不足<p>';
+            return 0;
+        }
+        
         echo '<p style="color:red">请注意，每年度评比前请使用本功能进行更新缓存操作<p>';
         echo '<br/>';
         echo '<p style="color:red">10秒钟后开始更新缓存,您可以关闭本标签页以停止缓存<p>';
@@ -187,7 +194,7 @@ class Fetch extends CI_Controller{
      *  @Return: 
      *  
     */
-    public function fetchStudentAveragePoint(){
+    private function fetchStudentAveragePoint(){
         $this->load->library('session');
         $this->load->model('fetch_model');
         
