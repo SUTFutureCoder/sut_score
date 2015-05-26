@@ -112,4 +112,35 @@ class Authorizee{
             return 0;
         }
     }
+
+    /**    
+     *  @Purpose:    
+     *  获取用户权限index索引
+     *    
+     *  @Method Name:
+     *  getRoleIndex($role_id)
+     *  @Parameter: 
+     *  $role_id    角色id
+     *  @Return: 
+     *  role_index  角色索引 
+     *  0 失败
+    */ 
+    public function getRoleIndex($role_id){
+        if (!self::$_ci){
+            //在自定义类库中初始化CI资源
+            self::$_ci =& get_instance();       
+        }
+        
+        self::$_ci->load->database();
+        self::$_ci->db->select('role_index');
+        self::$_ci->db->where('role_id', $role_id);
+        $result = self::$_ci->db->get('role');
+        if ($result->num_rows()){
+            foreach ($result->result_array() as $item){
+                return $item['role_index'];
+            }
+        } else {
+            return 0;
+        }
+    }
 }

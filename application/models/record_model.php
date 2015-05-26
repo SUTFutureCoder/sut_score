@@ -128,7 +128,7 @@ class Record_model extends CI_Model{
         $class = $this->search_model->getStudentClassId($student_id);
         $data = array();
         if ($mode == 'all'){
-            $this->db->select('score_log.score_log_judge, score_log.score_log_event_tag, score_log.score_type_id,'
+            $this->db->select('score_log.score_log_id, score_log.score_log_judge, score_log.score_log_event_tag, score_log.score_type_id,'
                 . 'score_log.score_log_add_time, score_log.score_log_event_time, '
                 . 'score_log.score_log_event_intro, score_log.score_log_event_certify, '
                 . 'score_log.score_log_event_file, score_log.score_log_valid, teacher.teacher_name, score_type.score_type_content');
@@ -146,7 +146,7 @@ class Record_model extends CI_Model{
 
             $result = $this->db->get();
         } else if ($mode = 'score'){
-            $this->db->select('score_log_judge, score_type_id');  
+            $this->db->select('score_log_id, score_log_judge, score_type_id');  
             
             $start_time = $start_term . '-09-01';
             $end_time   = $start_term + 1 . '-08-31';
@@ -163,4 +163,48 @@ class Record_model extends CI_Model{
         
     }
     
+    /**    
+     *  @Purpose:    
+     *  获取记录对应学生id
+     *  @Method Name:
+     *  getScoreStudent($score_log_id)
+     *  @Parameter: 
+     *  int $score_log_id 记录id
+     * 
+     *  @Return: 
+     *  0 查询失败
+     *  class_student_id 查询成功
+    */
+    public function getScoreStudent($score_log_id){
+        $this->load->database();
+        $this->db->select('class_student_id');
+        $this->db->where('score_log_id', $score_log_id);
+        $result = $this->db->get('score_log');
+        if ($result->num_rows()){
+            foreach ($result->result_array() as $value){
+                return $value['class_student_id'];
+            }
+        } else {
+            return 0;
+        }
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  删除记录
+     *  @Method Name:
+     *  deleScoreLog($score_log_id)
+     *  @Parameter: 
+     *  int $score_log_id 记录id
+     * 
+     *  @Return: 
+     *  0 删除失败
+     *  1 删除成功
+    */
+    public function deleScoreLog($score_log_id){
+        $this->load->database();
+        $this->db->where('score_log_id', $score_log_id);
+        $this->db->update('score_log', array('score_log_valid' => 0));
+        return $this->db->affected_rows();
+    }
 }

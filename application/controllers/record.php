@@ -48,7 +48,7 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
-        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
             echo '<script>alert("抱歉，您的权限不足");</script>';            
             return 0;
         }
@@ -75,7 +75,7 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
-        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
             echo '<script>alert("抱歉，您的权限不足");</script>';            
             return 0;
         }
@@ -101,7 +101,7 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
-        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
             echo '<script>alert("抱歉，您的权限不足");</script>';            
             return 0;
         }
@@ -161,7 +161,7 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->model('record_model');
         header("Content-type: text/html; charset=utf-8");
-        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
             echo '<script>alert("抱歉，您的权限不足");</script>';            
             return 0;
         }
@@ -811,6 +811,7 @@ FILESUCCESS;
         $objPHPExcel->getActiveSheet()->getColumnDimension('H')->setWidth(20);
 
         
+        
         header("Content-Type: application/force-download");  
         header("Content-Type: application/octet-stream");  
         header("Content-Type: application/download");  
@@ -1157,7 +1158,7 @@ FILESUCCESS;
         $this->load->library('session');
         $this->load->model('record_model');
         
-        if (!$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
             return 0;
         }
@@ -1233,6 +1234,52 @@ FILESUCCESS;
             return 0;
         } else {
             echo json_encode(array('code' => 2, 'message' => '插入数据失败，请联系管理员'));
+            return 0;   
+        }
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  删除记录    //将valid置0    
+     *  @Method Name:
+     *  deleScoreLog()    
+     *  @Parameter: 
+     *  POST score_log_id               流水号
+     *  @Return: 
+    */
+    public function deleScoreLog(){
+        $this->load->library('session');
+        $this->load->library('authorizee');
+        $this->load->model('record_model');
+        
+        if (!$this->session->userdata('cookie')){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的登录信息已过期,请重新登录'));
+            return 0;
+        }
+        $data = array();
+        
+        if (!$this->input->post('score_log_id', TRUE) || !ctype_digit($this->input->post('score_log_id', TRUE))){
+            echo json_encode(array('code' => -3, 'message' => '记录id必须为数字'));
+            return 0;
+        } else {
+            $data['score_log_id'] = $this->input->post('score_log_id', TRUE);
+        }
+        
+        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
+            return 0;
+        }
+        
+        if ($this->session->userdata('role_index') == 'write_person' && ($this->session->userdata('user_id') == $this->authorizee->getScoreStudent($data['score_log_id']))){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的不能更改其他用户记录'));
+            return 0;   
+        }
+        
+        if ($this->record_model->deleScoreLog($data['score_log_id'])){
+            echo json_encode(array('code' => 1));
+            return 0;
+        } else {
+            echo json_encode(array('code' => -4, 'message' => '删除数据失败'));
             return 0;   
         }
     }

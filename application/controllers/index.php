@@ -128,11 +128,16 @@ class Index extends CI_Controller{
                 echo json_encode(array('code' => -1, 'error' => '抱歉，您的信息存储错误'));
                 return 0;
             }
+            $role_index = $this->authorizee->getRoleIndex($role_id);
+        } else {
+            $role_index = 0;
         }
         
         $this->session->set_userdata('user_name', iconv('gb2312', 'utf-8//IGNORE', $result_array[0]));
         $this->session->set_userdata('user_id', iconv('gb2312', 'utf-8//IGNORE', $clean['WebUserNO']));
         $this->session->set_userdata('role_id', $role_id);
+        $this->session->set_userdata('role_index', $role_index);
+        
         echo json_encode(array('code' => 1));
     }
 }

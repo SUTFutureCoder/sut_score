@@ -99,6 +99,43 @@
     <div hidden="hidden" id="export_excel">
                 
     </div>
+    <div class="modal fade " id="score_update_modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="score_update_modal_title"></h4>
+            </div>        
+            <div class="modal-body" id="score_update_modal_body">     
+                <form role="form" id="data_update_list">
+                    
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>            
+                <button type="button" class="btn btn-danger" >确认</button>                
+            </div>
+        </div>
+        </div>
+    </div> 
+    
+    <div class="modal fade " id="score_dele_confirm_modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title">确认操作</h4>
+            </div>        
+            <div class="modal-body" id="danger_confirm_body">     
+                <h3 style="color:red">您确定删除此记录吗</h3>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>            
+                <button type="button" class="btn btn-danger" onclick="" id="dele_confirm">确认</button>           
+            </div>
+        </div>
+        </div>
+    </div>
     <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
     <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="<?= base_url('js/json.js')?>"></script>
@@ -108,8 +145,7 @@
         var options = {
             dataType : "json",
             beforeSubmit : function (){
-                $("#student_submit").html("正在提交中，请稍后");
-                $("#student_submit").attr("disabled", "disabled");
+                $("#student_submit").html("正在提交中，请稍后").attr("disabled", "disabled");
             },
             success : function (result){
                 console.log(result);
@@ -126,15 +162,20 @@
                         var student_accordion = $("#student_accordion");
                         student_accordion.html('');
                         $.each(result['data']['data'], function(i, item){
-                            var content = '<div class="panel panel-default"><div class="panel-heading" role="tab" id="heading_stu_' + i + '">\n\
+                            var content = '<div class="panel panel-default" id="panel_' + item['score_log_id'] + '" score="' + item['score_log_judge'] + '"><div class="panel-heading" role="tab" id="heading_stu_' + i + '">\n\
                     <h4 class="panel-title"><a data-toggle="collapse" data-parent="#accordion" href="#collapse_stu_' + i + '" data-toggle="collapse" aria-expanded="false" aria-controls="collapse_stu_' + i + '">' + item['score_type_content'] + '【' + item['score_log_judge'] + '】</a></h4></div>\n\
 <div id="collapse_stu_' + i + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading_stu_' + i +'"><div class="panel-body">\n\
-<table class="table table-hover"><tbody><tr><th scope="row" class="col-sm-1">标签</th><td>' + item['score_log_event_tag'] + '</td></tr><tr><th scope="row">说明</th><td>' + item['score_log_event_intro'] + '</td></tr><tr><th scope="row">时间</th><td>' + item['score_log_event_time'] + '</td></tr><tr><th scope="row">证明</th><td>' + item['teacher_name'] + '-' + item['score_log_add_time'];
+<table class="table table-hover"><tbody><tr><th scope="row" class="col-sm-1">标签</th><td>' + item['score_log_event_tag'] + '</td></tr><tr><th scope="row">说明</th><td>' + item['score_log_event_intro'] + '</td></tr><tr><th scope="row">时间</th><td>' + item['score_log_event_time'] + '</td></tr><tr><th scope="row">证明</th><td><a>' + item['teacher_name'] + '-' + item['score_log_add_time'] + '</a>';
                             if (item['score_log_event_file'] != ""){
-                                content += '<a type="button" target="_blank" href="<?= base_url()?>upload/' + item['score_log_event_file']  + '" class="btn btn-default">下载证明文件</a></td></tr><tr><th scope="row">变更</th><td>Larry</td></tr></tbody></table></div></div></div>';
+                                content += '<a type="button" target="_blank" href="<?= base_url()?>upload/' + item['score_log_event_file']  + '" class="btn btn-default">下载证明文件</a></td></tr>';
+                            }  
+                            
+                            if (item['score_type_id'] != "z_1_1_1"){
+                                content += '</td></tr><tr><th scope="row">变更</th><td><button score_log_id="' + item['score_log_id'] + '" class="btn btn-info" onclick="updateScoreLog(this)" type="button">修改</button>&nbsp;&nbsp;<button class="btn btn-danger" onclick="deleScoreLog(\'' + item['score_log_id'] + '\')" type="button">删除</button></td></tr></tbody></table></div></div></div>';
                             } else {
-                                content += '</td></tr><tr><th scope="row">变更</th><td>Larry</td></tr></tbody></table></div></div></div>';
-                            }   
+                                content += '</td></tr></tbody></table></div></div></div>';                                            
+                            }
+                                
                             student_accordion.append(content);
                         });
                         
@@ -144,8 +185,7 @@
                         break;
                 }                        
 
-                $("#student_submit").html("查询");
-                $("#student_submit").removeAttr("disabled");                    
+                $("#student_submit").html("查询").removeAttr("disabled");
             }
         };
 
@@ -232,6 +272,54 @@
             student_tab.find("#student_term_id option[value='" + select_term + "']").attr("selected", true);
             student_tab.find("#student_id").val(student_id);
             student_tab.find("#student_score_search").submit();
+        }
+        
+        //显示确认删除框
+        var score_dele_confirm_modal = $("#score_dele_confirm_modal");
+        function deleScoreLog(score_log_id){
+            score_dele_confirm_modal.find('#dele_confirm').attr('onclick', 'deleScoreLogConfirm("' + score_log_id + '")');
+            score_dele_confirm_modal.modal('show');
+        }
+        
+        //确认删除
+        function deleScoreLogConfirm(score_log_id){
+            $.post(
+                '<?= base_url('index.php/record/deleScoreLog')?>',
+                {
+                    score_log_id : score_log_id
+                },
+                function (result){
+                    var result = JSON.parse(result);
+                    switch (result['code'])
+                    {
+                        case 1:
+                            var score_log_panel = $("#panel_" + score_log_id);
+                            var score = parseFloat(score_log_panel.attr("score"));
+                            score_dele_confirm_modal.modal('hide');
+                            var student_score_stat = $("#student_score_stat");
+                            student_score_stat.find('#d_total_score,#w_total_score,#z_total_score').html(' ');
+                            var total_score = parseFloat(student_score_stat.find('#total_score').html());
+                            if (score < 0){
+                                total_score += score;
+                            } else {
+                                total_score -= score
+                            }
+                            student_score_stat.find('#total_score').html(total_score);
+                            score_log_panel.remove();
+                            break;
+                        default:
+                            alert(result['message']);
+                            break;
+                    }
+                }
+            )
+        }
+        
+        //修改
+        var score_update_modal = $("#score_update_modal");
+        function updateScoreLog(obj){
+            score_update_modal.find('#dele_confirm').attr('onclick', 'deleScoreLogConfirm("' + score_log_id + '")');
+            score_update_modal.modal('show');
         }
     </script>
 </body>

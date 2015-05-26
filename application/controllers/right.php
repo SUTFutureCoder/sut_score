@@ -38,15 +38,15 @@ class Right extends CI_Controller{
             return 0;
         }
         
-        if (!$role_id = $this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$role_id = $this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
             header("Content-type: text/html; charset=utf-8");
             echo '<script>alert("抱歉，您的权限不足");window.parent.location.href="' . base_url() . '";</script>';            
             return 0;
         }
         
         $list = array();
-        if ($role_id){
-            $list = $this->right_model->getRightList($role_id);
+        if ($this->session->userdata('role_id')){
+            $list = $this->right_model->getRightList($this->session->userdata('role_id'));
         }
         
         $this->load->view('authorizee_set_view', array(
@@ -73,13 +73,13 @@ class Right extends CI_Controller{
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的登录信息已过期,请重新登录'));
             return 0;
         }
-        
-        if (!$role_id = $this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'all') && !$role_id = $this->authorizee->checkAuthorizee($this->session->userdata('user_id'), 'write_person')){
+        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
             return 0;
         }
         
         $data = array();
+        
+        
     }
-    
 }
