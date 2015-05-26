@@ -41,4 +41,64 @@ class Right_model extends CI_Model{
         return $list;
     }
     
+    /**    
+     *  @Purpose:    
+     *  获取用户权限列表    
+     *  @Method Name:
+     *  getUserRightList()
+     *  @Parameter: 
+     *  @Return: 
+     *  array(
+     *      array(
+     *          'role_name' =>
+     *          'user_name' =>
+     *      )
+     * )
+    */
+    public function getUserRightList(){
+        $this->load->database();
+        $this->db->select('role.role_name, teacher.teacher_name');
+        $this->db->from('re_role_id');
+        $this->db->join('teacher', 're_role_id.user_id = teacher.teacher_id');
+        $this->db->join('role', 're_role_id.role_id = role.role_id');
+        $result = $this->db->get();
+        $list = array();
+        foreach ($result->result_array() as $list_item){
+            $list[] = $list_item;
+        }
+        
+        return $list;
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  设置用户权限    
+     *  @Method Name:
+     *  setUserRole($data)
+     * 
+     *  @Parameter: 
+     *  $data   信息数组
+     *  @Return: 
+     *  0   成功
+     *  1   失败
+    */
+    public function setUserRole($data){
+        $this->load->library('session');
+        $this->load->database();
+        //先查询再修改或添加
+        $this->db->where('user_id', $data['user_id']);
+        $result = $this->db->get('re_role_id');
+        if ($result->num_rows()){
+            if (!$data['role_id']){
+                $this->db->where('user_id', $data['user_id']);
+                $this->db->delete('re_role_id');
+                return $this->db->affected_rows();
+            }
+        }
+        
+        $data['role_auth_id'] = $this->session->userdata('user_id');
+        $data['role_auth_time'] = date('Y-m-d H:i:s');
+        $this->db->replace('re_role_id', $data);
+        return $this->db->affected_rows();
+    }
 }

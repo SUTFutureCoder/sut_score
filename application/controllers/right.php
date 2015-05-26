@@ -49,8 +49,10 @@ class Right extends CI_Controller{
             $list = $this->right_model->getRightList($this->session->userdata('role_id'));
         }
         
+        
         $this->load->view('authorizee_set_view', array(
-            'right_list' => $list
+            'right_list' => $list,
+            'user_right_list' => $this->right_model->getUserRightList()
         ));
     }
     
@@ -67,7 +69,7 @@ class Right extends CI_Controller{
     */
     public function setAuthorizee(){
         $this->load->library('session');
-        $this->load->library('Authorizee');
+        $this->load->library('authorizee');
         $this->load->model('right_model');
         if (!$this->session->userdata('cookie')){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的登录信息已过期,请重新登录'));
@@ -80,6 +82,28 @@ class Right extends CI_Controller{
         
         $data = array();
         
+        if (!$this->input->post('right_teacher_id', TRUE) || !ctype_digit($this->input->post('right_teacher_id', TRUE))
+                || strlen($this->input->post('right_teacher_id', TRUE)) != 5){
+            echo json_encode(array('code' => -2, 'message' => '抱歉，教师id为数字且不能为空或大于5位'));
+            return 0;
+        } else {
+            $data['user_id'] = $this->input->post('right_teacher_id', TRUE);
+        }
         
+        if (!ctype_digit($this->input->post('right_set_form_type', TRUE))
+                || ($this->input->post('right_set_form_type', TRUE) != 0 && !$this->authorizee->getRoleIndex($this->input->post('right_set_form_type', TRUE)))){
+            echo json_encode(array('code' => -3, 'message' => '抱歉，权限id错误'));
+            return 0;
+        } else {
+            $data['role_id'] = $this->input->post('right_set_form_type', TRUE);
+        }
+        
+        if ($this->right_model->setUserRole($data)){
+            echo json_encode(array('code' => 1));
+            return 0;
+        } else {
+            echo json_encode(array('code' => -4, 'message' => '处理失败'));
+            return 0;
+        }
     }
 }
