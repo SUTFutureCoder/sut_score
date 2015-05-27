@@ -1190,6 +1190,11 @@ FILESUCCESS;
             $data['score_log_judge'] = (float)$this->input->post('score_log_judge', TRUE) * (int)(($this->input->post('score_mod', TRUE)) . 1);
         }
         
+        if (!$this->record_model->checkScoreJudge($data['score_type_id'], $data['score_log_judge'])){
+            echo json_encode(array('code' => -3, 'message' => '抱歉，分数错误，请参考评分标准', 'id' => 'score_judge'));
+            return 0;
+        }
+        
         if (!$this->input->post('score_log_event_time', TRUE) || !preg_match('/\d\d\d\d-[0-1]?[1-9]-[0-3]?[0-9]/', $this->input->post('score_log_event_time', TRUE))){
             echo json_encode(array('code' => -3, 'message' => '请输入正确的时间，例：2015-05-12', 'id' => 'event_time'));
             return 0;

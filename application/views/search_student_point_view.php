@@ -26,7 +26,7 @@
                             break;
                     }                        
                     
-                    $(".btn").html("登录");
+                    $(".btn").html("查询");
                     $(".btn").removeAttr("disabled");                    
                 }
             };
@@ -48,7 +48,7 @@
         <div class="form-group col-sm-5">
             <input type="text" class="form-control" name="student_id" id="student_id" placeholder="学号">
         </div>
-        <button type="submit" class="btn btn-default">确定</button>
+        <button type="submit" class="btn btn-default">查询</button>
     </form>
     <br/>
     <br/>

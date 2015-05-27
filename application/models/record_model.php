@@ -92,6 +92,42 @@ class Record_model extends CI_Model{
     
     /**    
      *  @Purpose:    
+     *  检查分数是否合法
+     *  @Method Name:
+     *  checkScoreJudge($score_type_id, $score_log_judge)
+     *  @Parameter: 
+     *  string  $score_type_id      项目id
+     *  float   $score_log_judge    项目分数
+     * 
+     *  @Return: 
+     *  0 不合法
+     *  1 合法
+    */
+    public function checkScoreJudge($score_type_id, $score_log_judge){
+        $this->load->database();
+        $this->db->where('score_type_id', $score_type_id);
+        $result = $this->db->get('score_type');
+        if ($result->num_rows()){
+            $data = array();
+            foreach ($result->result_array() as $data){
+                if ($data['score_mod'] == 'd'){
+                    $score_log_judge = $score_log_judge * -1;
+                }
+                
+                if ($data['score_min'] <= $score_log_judge && $score_log_judge <= $data['score_max'] ){
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+            
+        } else {
+            return 0;
+        }
+    }
+    
+    /**    
+     *  @Purpose:    
      *  添加记录
      *  @Method Name:
      *  setScoreLog($data)

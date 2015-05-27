@@ -92,13 +92,28 @@ class Right_model extends CI_Model{
             if (!$data['role_id']){
                 $this->db->where('user_id', $data['user_id']);
                 $this->db->delete('re_role_id');
-                return $this->db->affected_rows();
+                if ($this->db->affected_rows()){
+                    $this->db->where('teacher_id', $data['user_id']);
+                    $this->db->delete('teacher');
+                    return 1;
+                } else {
+                    return 0;
+                }
             }
         }
         
         $data['role_auth_id'] = $this->session->userdata('user_id');
         $data['role_auth_time'] = date('Y-m-d H:i:s');
         $this->db->replace('re_role_id', $data);
-        return $this->db->affected_rows();
+        
+        if ($this->db->affected_rows()){
+            $teacher_data = array();
+            $teacher_data['teacher_id'] = $data['user_id'];
+            $teacher_data['teacher_name'] = $data['user_id'];
+            $this->db->replace('teacher', $teacher_data);
+            return 1;
+        } else {
+            return 0;
+        }
     }
 }
