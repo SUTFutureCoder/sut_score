@@ -11,7 +11,7 @@
 <body class="easyui-layout">
 <div region="north" border="false" class="cs-north" style="height:30px; overflow:hidden">
                 <div  style="height: 30px; top:5px; overflow: hidden; position: relative; left: 10px; float: left">
-                    <a href="javascript:void(0);" class="cs-navi-tab">您好，尊敬的&nbsp;<?= $user_name ?></a>
+                    <a href="javascript:void(0);" src="<?= base_url('index.php/control_center/getTeacherInfo') ?>" class="cs-navi-tab">您好，尊敬的&nbsp;<?= $user_name ?></a>
                 </div>
 		<div class="cs-north-bg"style="top:0%" >
 		<ul class="ui-skin-nav">				

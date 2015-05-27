@@ -51,7 +51,7 @@ class Fetch_model extends CI_Model{
 
             $class_key = array('class_id', 'class_name');
             foreach ($class_data as $class_value){
-                $this->db->insert('class_info', array_combine($class_key, array_values($class_value)));
+                $this->db->replace('class_info', array_combine($class_key, array_values($class_value)));
             }
         } catch (Exception $ex) {
             return array('error' => $ex->getMessage());

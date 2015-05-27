@@ -171,7 +171,7 @@
                             }  
                             
                             if (item['score_type_id'] != "z_1_1_1"){
-                                content += '</td></tr><tr><th scope="row">变更</th><td><button score_log_id="' + item['score_log_id'] + '" class="btn btn-info" onclick="updateScoreLog(this)" type="button">修改</button>&nbsp;&nbsp;<button class="btn btn-danger" onclick="deleScoreLog(\'' + item['score_log_id'] + '\')" type="button">删除</button></td></tr></tbody></table></div></div></div>';
+                                content += '</td></tr><tr><th scope="row">变更</th><td><button class="btn btn-danger" onclick="deleScoreLog(\'' + item['score_log_id'] + '\')" type="button">删除</button></td></tr></tbody></table></div></div></div>';
                             } else {
                                 content += '</td></tr></tbody></table></div></div></div>';                                            
                             }
