@@ -460,14 +460,24 @@ FILESUCCESS;
         $data['score']['w_sum'] = 0.000;
         
         $flag_d_2_2_1 = 0;
-        foreach ($data['data'] as $item){
+        $flag_d_2_2_2 = 0;
+        foreach ($data['data'] as $key => $item){
             //进行同项高计
-            if ($item['score_type_id'] == 'd_2_2_1'){
+            if ($item['score_type_id'] == 'd_2_2_1' && !$flag_d_2_2_1){
                 $flag_d_2_2_1 = 1;
             }
             
+            if ($item['score_type_id'] == 'd_2_2_2' && !$flag_d_2_2_2){
+                $flag_d_2_2_2 = 1;
+            }
+            
             if ($item['score_type_id'] == 'd_2_2_2' && $flag_d_2_2_1){
-                $item['score_log_judge'] = 0;
+                $data['data'][$key]['score_log_judge'] = 0;
+                continue;
+            }
+            
+            if ($item['score_type_id'] == 'd_2_2_1' && $flag_d_2_2_2){
+                $data['data'][$key]['score_log_judge'] = 0;
                 continue;
             }
 
@@ -584,12 +594,33 @@ FILESUCCESS;
                     'score_type_id' => 'z_1_1_1'
                 ));
             }
-
+ 
             $data[$average_point_item['student_id']]['score']['sum'] = 0.000;
             $data[$average_point_item['student_id']]['score']['d_sum'] = 0.000;
             $data[$average_point_item['student_id']]['score']['z_sum'] = 0.000;
             $data[$average_point_item['student_id']]['score']['w_sum'] = 0.000;
-            foreach ($data[$average_point_item['student_id']]['data'] as $item){
+            $flag_d_2_2_1 = 0;
+            $flag_d_2_2_2 = 0;
+            foreach ($data[$average_point_item['student_id']]['data'] as $key => $item){
+                //进行同项高计
+                if ($item['score_type_id'] == 'd_2_2_1' && !$flag_d_2_2_1){
+                    $flag_d_2_2_1 = 1;
+                }
+                
+                if ($item['score_type_id'] == 'd_2_2_2' && !$flag_d_2_2_2){
+                    $flag_d_2_2_2 = 1;
+                }
+
+                if ($item['score_type_id'] == 'd_2_2_1' && $flag_d_2_2_2){
+                    $data[$average_point_item['student_id']]['data'][$key]['score_log_judge'] = 0;
+                    continue;
+                }
+
+                if ($item['score_type_id'] == 'd_2_2_2' && $flag_d_2_2_1){
+                    $data[$average_point_item['student_id']]['data'][$key]['score_log_judge'] = 0;
+                    continue;
+                }
+                
                 switch ($item['score_type_id'][0]){
                     case 'd':
                         $data[$average_point_item['student_id']]['score']['d_sum'] += $item['score_log_judge'];
