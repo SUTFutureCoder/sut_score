@@ -49,7 +49,7 @@ class Control_center extends CI_Controller{
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         $result = curl_exec($ch);
         curl_close($ch);
-        $result = iconv('gb2312', 'utf-8//IGNORE', $result); 
+        $result = str_replace('ACTIONQUERYTEACHERPIC.APPPROCESS', BASE_SCHOOL_URL . 'ACTIONQUERYTEACHERPIC.APPPROCESS', $result);
         echo $result;
     }
 }

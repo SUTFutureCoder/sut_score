@@ -39,9 +39,9 @@ class Fetch extends CI_Controller{
             return 0;
         }
         
-        echo '<p style="color:red">请注意，每年度评比前请使用本功能进行更新缓存操作<p>';
+        echo '<p style="color:red">请注意，使用时发现无法找到班级或名单请使用本功能进行更新缓存操作<p>';
         echo '<br/>';
-        echo '<p style="color:red">10秒钟后开始更新缓存,您可以关闭本标签页以停止缓存<p>';
+        echo '<p style="color:red">10秒钟后开始更新缓存,您可以关闭本标签页以停止缓存，缓存途中请勿关闭<p>';
         echo '<br/>';
         ob_flush(); 
         flush();

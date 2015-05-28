@@ -458,7 +458,19 @@ FILESUCCESS;
         $data['score']['d_sum'] = 0.000;
         $data['score']['z_sum'] = 0.000;
         $data['score']['w_sum'] = 0.000;
+        
+        $flag_d_2_2_1 = 0;
         foreach ($data['data'] as $item){
+            //进行同项高计
+            if ($item['score_type_id'] == 'd_2_2_1'){
+                $flag_d_2_2_1 = 1;
+            }
+            
+            if ($item['score_type_id'] == 'd_2_2_2' && $flag_d_2_2_1){
+                $item['score_log_judge'] = 0;
+                continue;
+            }
+
             switch ($item['score_type_id'][0]){
                 case 'd':
                     $data['score']['d_sum'] += $item['score_log_judge'];
