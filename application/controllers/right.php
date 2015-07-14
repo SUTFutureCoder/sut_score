@@ -38,7 +38,7 @@ class Right extends CI_Controller{
             return 0;
         }
         
-        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin'))){
             header("Content-type: text/html; charset=utf-8");
             echo '<script>alert("抱歉，您的权限不足");window.parent.location.href="' . base_url() . '";</script>';            
             return 0;
@@ -75,12 +75,17 @@ class Right extends CI_Controller{
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的登录信息已过期,请重新登录'));
             return 0;
         }
-        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin'))){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
             return 0;
         }
         
         $data = array();
+        
+        if ($this->input->post('right_teacher_id', TRUE) == $this->session->userdata('user_id')){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您不能对自己进行操作'));
+            return 0;
+        }
         
         if (!$this->input->post('right_teacher_id', TRUE) || !ctype_digit($this->input->post('right_teacher_id', TRUE)) || 9 < strlen($this->input->post('right_teacher_id', TRUE))){
             echo json_encode(array('code' => -2, 'message' => '抱歉，教师或学生id需要为数字'));
@@ -97,8 +102,6 @@ class Right extends CI_Controller{
             $data['role_id'] = $this->input->post('right_set_form_type', TRUE);
         }
         
-        var_dump($data);
-        exit();
         if ($this->right_model->setUserRole($data)){
             echo json_encode(array('code' => 1));
             return 0;

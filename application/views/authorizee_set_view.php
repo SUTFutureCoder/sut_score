@@ -10,7 +10,7 @@
     <div class="col-sm-12">
         <form class="form-horizontal col-sm-10 col-sm-offset-1" action="<?= base_url("index.php/right/setAuthorizee")?>" method="post" id="right_set_form">
             <div class="form-group">
-                <label for="right_teacher_id" class="col-sm-2 control-label">教师id</label>
+                <label for="right_teacher_id" class="col-sm-2 control-label">教师/学生id</label>
                 <div class="col-sm-10">
                     <input type="text" class="form-control" name="right_teacher_id" id="right_teacher_id">
                 </div>
@@ -70,7 +70,7 @@
             }
         };
 
-        right_set_form.ajaxForm(options);  
+//        right_set_form.ajaxForm(options);  
     </script>
 </body>
 </html>

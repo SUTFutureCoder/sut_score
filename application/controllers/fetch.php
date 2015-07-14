@@ -34,7 +34,7 @@ class Fetch extends CI_Controller{
         set_time_limit(1800);
         header("Content-type:text/html;charset=utf-8");
         
-        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin'))){
             echo '<p style="color:red">抱歉您的权限不足<p>';
             return 0;
         }

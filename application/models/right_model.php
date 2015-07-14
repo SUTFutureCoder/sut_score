@@ -30,8 +30,8 @@ class Right_model extends CI_Model{
     */
     public function getRightList($right_id = 0){
         $this->load->database();
-        if (!$right_id){
-            $this->db->where('role_id >=', $right_id);
+        if ($right_id){
+            $this->db->where('role_id >', $right_id);
         }
         $list = array();
         $result = $this->db->get('role');
@@ -85,29 +85,23 @@ class Right_model extends CI_Model{
     public function setUserRole($data){
         $this->load->library('session');
         $this->load->database();
-        //先查询再修改或添加
-        $this->db->where('user_id', $data['user_id']);
-        $result = $this->db->get('re_role_id');
-        if ($result->num_rows()){
-            if (!$data['role_id']){
-                $this->db->where('user_id', $data['user_id']);
-                $this->db->delete('re_role_id');
-                if ($this->db->affected_rows()){
-                    $this->db->where('teacher_id', $data['user_id']);
-                    $this->db->delete('teacher');
-                }
-            }
-        }
         
         $data['role_auth_id'] = $this->session->userdata('user_id');
         $data['role_auth_time'] = date('Y-m-d H:i:s');
         $this->db->replace('re_role_id', $data);
         
         if ($this->db->affected_rows()){
-            $teacher_data = array();
-            $teacher_data['teacher_id'] = $data['user_id'];
-            $teacher_data['teacher_name'] = $data['user_id'];
-            $this->db->replace('teacher', $teacher_data);
+            //如果表里有数据则不进行替换操作
+            $this->db->where('teacher_id', $data['user_id']);
+            $result = $this->db->get('teacher');
+            if (!$result->num_rows()){
+                $teacher_data = array();
+                $teacher_data['teacher_id'] = $data['user_id'];
+                $this->db->replace('teacher', $teacher_data);
+                if ($this->db->affected_rows()){
+                    return 1;
+                }
+            }
             return 1;
         } else {
             return 0;

@@ -47,11 +47,15 @@
                             <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudentMark') ?>" class="cs-navi-tab">学生成绩查询</a></p>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudentPoint') ?>" class="cs-navi-tab">学生平均绩点查询</a></p>
                             <!-- <a href="javascript:void(0);" src="<?= base_url('index.php/search/showSearchStudentMark') ?>" class="cs-navi-tab">竞赛时间数据挖掘</a></p> -->
+                        <?php if (in_array($role_index, array('god', 'admin'))): ?>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/fetch/fetchStudentBasicInfo') ?>" class="cs-navi-tab">全校名单缓存更新</a></p>
+                        <?php endif; ?>
                         </div>
                     <?php endif; ?>
                         <div title="权限相关">
+                        <?php if (in_array($role_index, array('god', 'admin'))):?>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/right/showAuthorizeeSet')?>" class="cs-navi-tab">授权用户</a></p>
+                        <?php endif; ?>
                         </div>       
                     <?php endif; ?>
 		</div>
