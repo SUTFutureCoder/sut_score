@@ -203,7 +203,7 @@ class Search extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('search_model');
-        if (!$this->session->userdata('cookie')){
+        if ((!$this->session->userdata('cookie') && $this->session->userdata('online')) || !$this->session->userdata('user_id')){
             json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
         }
         
@@ -543,12 +543,12 @@ class Search extends CI_Controller{
     public function ajaxGetStudentClassName(){
         $this->load->library('session');
         $this->load->model('search_model');
-        if (strlen($this->session->userdata('user_id')) != 5){
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin', 'write_all', 'write_person'))){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
             return 0;
         }
         
-        if (!$this->session->userdata('cookie')){
+        if ((!$this->session->userdata('cookie') && $this->session->userdata('online')) || !$this->session->userdata('user_id')){
             echo json_encode(array('code' => -2, 'message' => '抱歉，您的权限不足或登录信息已过期,请重新登录'));
             return 0;
         }

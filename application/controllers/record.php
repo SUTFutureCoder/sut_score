@@ -48,7 +48,7 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
-        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin', 'write_all', 'write_person'))){
             echo '<script>alert("抱歉，您的权限不足");</script>';            
             return 0;
         }
@@ -75,7 +75,7 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
-        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin', 'write_all', 'write_person'))){
             echo '<script>alert("抱歉，您的权限不足");</script>';            
             return 0;
         }
@@ -101,7 +101,7 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('record_model');
-        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin', 'write_all', 'write_person'))){
             echo '<script>alert("抱歉，您的权限不足");</script>';            
             return 0;
         }
@@ -161,7 +161,7 @@ class Record extends CI_Controller{
         $this->load->library('session');
         $this->load->model('record_model');
         header("Content-type: text/html; charset=utf-8");
-        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin', 'write_all', 'write_person'))){
             echo '<script>alert("抱歉，您的权限不足");</script>';            
             return 0;
         }
@@ -1206,8 +1206,13 @@ FILESUCCESS;
         $this->load->library('session');
         $this->load->model('record_model');
         
-        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin', 'write_all', 'write_person'))){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
+            return 0;
+        }
+        
+        if ('write_person' == $this->session->userdata('role_index') && $this->input->post('class_student_id', TRUE) != $this->session->userdata('user_id')){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您只能添加自己的信息'));
             return 0;
         }
         
@@ -1318,7 +1323,7 @@ FILESUCCESS;
             $data['score_log_id'] = $this->input->post('score_log_id', TRUE);
         }
         
-        if (!in_array($this->session->userdata('role_index'), array('all', 'write_person'))){
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin', 'write_all', 'write_person'))){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足'));
             return 0;
         }

@@ -70,7 +70,7 @@
             }
         };
 
-//        right_set_form.ajaxForm(options);  
+        right_set_form.ajaxForm(options);  
     </script>
 </body>
 </html>

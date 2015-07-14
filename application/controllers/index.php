@@ -168,6 +168,8 @@ class Index extends CI_Controller{
         $this->session->set_userdata('role_index', $role_index);
         $this->session->set_userdata('online', true);
         
+        $this->session->unset_userdata('authnum_session');
+        
         echo json_encode(array('code' => 1));
     }
     
@@ -231,6 +233,8 @@ class Index extends CI_Controller{
         $this->session->set_userdata('user_id', $clean['teacher_id']);
         $this->session->set_userdata('role_index', $role_index);
         $this->session->set_userdata('online', false);
+        
+        $this->session->unset_userdata('cookie');
         
         echo json_encode(array('code' => 1));
     }

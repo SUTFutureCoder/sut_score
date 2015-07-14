@@ -30,7 +30,7 @@ class Right_model extends CI_Model{
     */
     public function getRightList($right_id = 0){
         $this->load->database();
-        if ($right_id){
+        if ($right_id > 1){
             $this->db->where('role_id >', $right_id);
         }
         $list = array();
