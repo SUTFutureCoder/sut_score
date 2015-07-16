@@ -10,7 +10,9 @@
         <!-- Nav tabs -->
         <ul class="nav nav-tabs" role="tablist">
             <li role="presentation" class="active"><a href="#student" id="student_aria_tab" aria-controls="student" role="tab" data-toggle="tab">学生</a></li>
+        <?php if (in_array($role_index, array('god', 'admin', 'write_all'))): ?>
             <li role="presentation"><a href="#class" aria-controls="class" role="tab" data-toggle="tab">班级</a></li>
+        <?php endif; ?>
         </ul>
 
         <!-- Tab panes -->
@@ -27,7 +29,11 @@
                         </select>
                     </div>
                     <div class="form-group col-sm-5">
-                        <input type="text" class="form-control" name="student_id" id="student_id" placeholder="学号">
+                        <?php if (in_array($role_index, array('write_person', 'readonly'))): ?>
+                            <input type="text" class="form-control" name="student_id" readonly="readonly" value="<?= $user_id ?>" id="student_id" placeholder="学号">
+                        <?php else: ?>
+                            <input type="text" class="form-control" name="student_id" id="student_id" placeholder="学号">
+                        <?php endif; ?>
                     </div>
                     <button type="submit" id="student_submit" class="btn btn-default">查询</button>
                     <button type="button" class="btn btn-primary" id="export_excel_button" onclick="exportExcel(this, 'student')">导出Excel表格</button>
@@ -42,7 +48,7 @@
                     
                 </div>
             </div>
-            
+            <?php if (in_array($role_index, array('god', 'admin', 'write_all'))): ?>
             <div role="tabpanel" class="tab-pane fade" id="class">
                 <br/>
                 <form class="form-horizontal col-sm-10 col-sm-offset-1" id='form_search'>
@@ -94,6 +100,7 @@
                     <hr>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
     <div hidden="hidden" id="export_excel">

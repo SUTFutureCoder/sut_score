@@ -15,7 +15,11 @@
 <body class="easyui-layout">
 <div region="north" border="false" class="cs-north" style="height:30px; overflow:hidden">
                 <div  style="height: 30px; top:5px; overflow: hidden; position: relative; left: 10px; float: left">
-                    <a href="javascript:void(0);" src="<?= base_url('index.php/control_center/getTeacherInfo') ?>" class="cs-navi-tab">您好，尊敬的&nbsp;<?= $user_name ?></a>
+                    <?php if ($online && 5 == strlen($user_id)): ?>
+                        <a href="javascript:void(0);" src="<?= base_url('index.php/control_center/getTeacherInfo') ?>" class="cs-navi-tab">您好，尊敬的&nbsp;<?= $user_name ?></a>
+                    <?php else: ?>
+                        <a href="#">您好，尊敬的&nbsp;<?= $user_name ?></a>
+                    <?php endif; ?>
                 </div>
 		<div class="cs-north-bg"style="top:0%" >
 		<ul class="ui-skin-nav">				
@@ -52,11 +56,11 @@
                         <?php endif; ?>
                         </div>
                     <?php endif; ?>
+                    <?php if (in_array($role_index, array('god', 'admin'))):?>
                         <div title="权限相关">
-                        <?php if (in_array($role_index, array('god', 'admin'))):?>
                             <a href="javascript:void(0);" src="<?= base_url('index.php/right/showAuthorizeeSet')?>" class="cs-navi-tab">授权用户</a></p>
-                        <?php endif; ?>
                         </div>       
+                    <?php endif; ?>
                     <?php endif; ?>
 		</div>
 	</div>

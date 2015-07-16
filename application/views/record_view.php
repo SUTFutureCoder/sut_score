@@ -11,8 +11,12 @@
         <div class="form-group">
             <label for="student_class_id" class="col-sm-2 control-label">学号/班号</label>
             <div class="input-group col-sm-10">
-                <input type="text" class="form-control" oninput="getStudentOrClassName(this.value)" onPropertyChange="getStudentOrClassName(this.value)"  aria-describedby="student_class_info" id="student_class_id">
-                <span class="input-group-addon" id="student_class_info"></span>
+                <?php if (in_array($role_index, array('god', 'admin', 'write_all'))): ?>
+                    <input type="text" class="form-control" oninput="getStudentOrClassName(this.value)" onPropertyChange="getStudentOrClassName(this.value)"  aria-describedby="student_class_info" id="student_class_id">
+                    <span class="input-group-addon" id="student_class_info"></span>
+                <?php else: ?>
+                    <input type="text" class="form-control" value="<?= $user_id ?>" readonly="readonly" aria-describedby="student_class_info" id="student_class_id">
+                <?php endif; ?>
             </div>
         </div>
         <hr class="col-sm-offset-2">
@@ -206,7 +210,9 @@
                 {
                     case 1:
                         alert('添加成功');
-                        $("#student_class_id").val('');
+                        <?php if ('write_person' != $role_index): ?>
+                            $("#student_class_id").val('');
+                        <?php endif; ?>
                         $("#event_time").val('');
                         $("#event_tag").val('');
                         $("#event_intro").val('');
