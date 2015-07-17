@@ -45,4 +45,27 @@ class User_model extends CI_Model{
         
         return 1;
     }
+    
+    /**    
+     *  @Purpose:    
+     *  获取数据库教师(用户)信息(包括加密后密码)
+     *  @Method Name:
+     *  getTeacherInfo($teacher_id)
+     *  @Parameter: 
+     *  string $teacher_id      教师id
+     * 
+     *  @Return: 
+     *  array(
+     *      'teacher_id', 'teacher_name', 'teacher_password'
+     *  )
+    */
+    public function getTeacherInfo($teacher_id){
+        $this->load->database();
+        $this->db->where('teacher_id', $teacher_id);
+        $result = $this->db->get('teacher');
+        if ($result->num_rows() > 0){
+            return $result->row_array();
+        }
+        return 0;
+    }
 }

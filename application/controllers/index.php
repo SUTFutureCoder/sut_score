@@ -34,6 +34,24 @@ class Index extends CI_Controller{
         $this->load->view('login_view');
     }
     
+    /**    
+     *  @Purpose:    
+     *  显示离线版主页    
+     *  @Method Name:
+     *  IndexOffline()    
+     *  @Parameter: 
+     *     
+     *  @Return: 
+     *  
+     * :WARNING: 请不要地址末尾加上index.php打开 :WARNING:
+    */
+    public function IndexOffline()
+    {          
+        $this->load->library('session');
+        
+        $this->load->view('login_offline_view');
+    }
+    
     //显示验证码
     public function getAgnomen(){
         $this->load->library('session');
@@ -49,13 +67,28 @@ class Index extends CI_Controller{
         list($header, $body) = explode("\r\n\r\n", $content);
         preg_match("/set\-cookie:([^\r\n!]*)/i", $header, $matches); 
         $cookie = $matches[1];  
-        
         $this->session->set_userdata('cookie', $cookie);
         header("Content-Type:image/jpg");
         echo ($body);
     }
     
-    
+    /**    
+     *  @Purpose:    
+     *  显示离线验证码    
+     *  @Method Name:
+     *  getOfflineAgnomen()    
+     *  @Parameter: 
+     *  
+     *  @Return: 
+     *  
+    */
+    public function getOfflineAgnomen(){
+        $this->load->library('session');
+        $this->load->library('ValidateCode');
+        $_vc = new ValidateCode();            
+        $_vc->doimg();
+        $this->session->set_userdata('authnum_session', $_vc->getCode());
+    }
     
     /**    
      *  @Purpose:    
@@ -81,20 +114,22 @@ class Index extends CI_Controller{
         } else {
             $clean['WebUserNO'] = $this->input->post('WebUserNO', TRUE);
         }
-        
+            
         //cURL请求
         $url = BASE_SCHOOL_URL . 'ACTIONLOGON.APPPROCESS?mode=4';
         $clean['Password'] = $this->input->post('Password', TRUE);
         $clean['Agnomen'] = $this->input->post('Agnomen', TRUE);
         
         //本地数据库权限检查
-        if($role_id = $this->authorizee->getAuthorizeeId($clean['WebUserNO'])){
+        if($role_index = $this->authorizee->getAuthorizeeIndex($clean['WebUserNO'])){
             //为0则只读，只能读取除平均绩点外的数据
-             if ($role_id == 3){
+             if ($role_index == 'ban_use'){
                 //ban
                 echo json_encode(array('code' => -1, 'error' => '抱歉，您的账户已被封禁'));
                 return 0;
             }
+        } else {
+            $role_index = 'readonly';
         }
         
         $ch = curl_init();
@@ -123,20 +158,79 @@ class Index extends CI_Controller{
         $clean['teacher_id'] = htmlentities(iconv('gb2312', 'utf-8//IGNORE', $clean['WebUserNO']), ENT_QUOTES);
         $clean['teacher_password'] = $this->encrypt->encode($clean['Password']);
         
-        if ($role_id){
-            if (1 != $this->user_model->updateTeacherInfo($clean['teacher_id'], $clean['teacher_name'], $clean['teacher_password'])){
-                echo json_encode(array('code' => -1, 'error' => '抱歉，您的信息存储错误'));
-                return 0;
-            }
-            $role_index = $this->authorizee->getRoleIndex($role_id);
-        } else {
-            $role_index = 0;
+        if (1 != $this->user_model->updateTeacherInfo($clean['teacher_id'], $clean['teacher_name'], $clean['teacher_password'])){
+            echo json_encode(array('code' => -1, 'error' => '抱歉，您的信息存储错误'));
+            return 0;
         }
         
-        $this->session->set_userdata('user_name', iconv('gb2312', 'utf-8//IGNORE', $result_array[0]));
-        $this->session->set_userdata('user_id', iconv('gb2312', 'utf-8//IGNORE', $clean['WebUserNO']));
-        $this->session->set_userdata('role_id', $role_id);
+        $this->session->set_userdata('user_name', $clean['teacher_name']);
+        $this->session->set_userdata('user_id',  $clean['teacher_id']);
         $this->session->set_userdata('role_index', $role_index);
+        $this->session->set_userdata('online', true);
+        
+        echo json_encode(array('code' => 1));
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  离线验证用户登陆    
+     *  @Method Name:
+     *  PassCheckOffline()    
+     *  @Parameter: 
+     *  
+     *  @Return: 
+     *  
+    */
+    public function PassCheckOffline(){
+        $this->load->library('session');
+        $this->load->library('encrypt');
+        $this->load->library('authorizee');
+        $this->load->model('user_model');
+
+        if ($this->session->userdata('authnum_session') == $this->input->post('Agnomen', true)){
+            echo json_encode(array('code' => -1, 'error' => '抱歉，您输入的验证码有误'));
+            return 0;
+        }
+        
+        $clean = array();
+        if (!$this->input->post('WebUserNO', TRUE) || !ctype_digit($this->input->post('WebUserNO', TRUE))){
+            echo json_encode(array('code' => -1, 'error' => '抱歉，您的教务处账号不合法'));
+            return 0;
+        } else {
+            $clean['WebUserNO'] = $this->input->post('WebUserNO', TRUE);
+        }
+            
+        //本地数据库权限检查
+        if($role_index = $this->authorizee->getAuthorizeeIndex($clean['WebUserNO'])){
+            //为0则只读，只能读取除平均绩点外的数据
+             if ($role_index == 'ban_use'){
+                //ban
+                echo json_encode(array('code' => -1, 'error' => '抱歉，您的账户已被封禁'));
+                return 0;
+            }
+        } else {
+            $role_index = 'readonly';
+        }
+        
+        //本地数据库检查用户名密码
+        if ($user_info_array = $this->user_model->getTeacherInfo($clean['WebUserNO'])){
+            if ($this->encrypt->decode($user_info_array['teacher_password']) != $this->input->post('Password', true)){
+                echo json_encode(array('code' => -1, 'error' => '抱歉，您的密码有误或未曾在在线模式下登录过'));
+                return 0;
+            } else {
+                //写入session
+                $clean['teacher_name'] = htmlentities($user_info_array['teacher_name'], ENT_QUOTES);
+                $clean['teacher_id'] = htmlentities($user_info_array['teacher_id'], ENT_QUOTES);
+            }
+        } else {
+            echo json_encode(array('code' => -1, 'error' => '抱歉，您尚未被授权使用本平台'));
+            return 0;
+        }
+        
+        $this->session->set_userdata('user_name', $clean['teacher_name']);
+        $this->session->set_userdata('user_id', $clean['teacher_id']);
+        $this->session->set_userdata('role_index', $role_index);
+        $this->session->set_userdata('online', false);
         
         echo json_encode(array('code' => 1));
     }

@@ -95,9 +95,6 @@ class Right_model extends CI_Model{
                 if ($this->db->affected_rows()){
                     $this->db->where('teacher_id', $data['user_id']);
                     $this->db->delete('teacher');
-                    return 1;
-                } else {
-                    return 0;
                 }
             }
         }

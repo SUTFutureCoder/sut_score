@@ -82,9 +82,42 @@ class Authorizee{
         }
     }
 
+    
     /**    
      *  @Purpose:    
-     *  获取用户权限id
+     *  获取用户权限index索引
+     *    
+     *  @Method Name:
+     *  getAuthorizeeIndex($role_id)
+     *  @Parameter: 
+     *  $role_id    角色id
+     *  @Return: 
+     *  role_index  角色索引 
+     *  0 失败
+    */ 
+    public function getAuthorizeeIndex($user_id){
+        if (!self::$_ci){
+            //在自定义类库中初始化CI资源
+            self::$_ci =& get_instance();       
+        }
+        
+        self::$_ci->load->database();
+        self::$_ci->db->select('role_index');
+        self::$_ci->db->from('re_role_id');
+        self::$_ci->db->where('re_role_id.user_id', $user_id);
+        self::$_ci->db->join('role', 'role.role_id=re_role_id.role_id');
+        $result = self::$_ci->db->get();
+        if ($result->num_rows()){
+            $row = $result->row_array();
+            return $row['role_index'];
+        } else {
+            return 0;
+        }
+    }
+    
+    /**    
+     *  @Purpose:    
+     *  通过index获取用户权限id
      *    
      *  @Method Name:
      *  getRoleId($role_index)
@@ -115,7 +148,7 @@ class Authorizee{
 
     /**    
      *  @Purpose:    
-     *  获取用户权限index索引
+     *  获取用户角色index索引
      *    
      *  @Method Name:
      *  getRoleIndex($role_id)

@@ -20,7 +20,7 @@ class Control_center extends CI_Controller{
     public function index(){
         $this->load->library('session');
         $this->load->library('authorizee');
-        if (!$this->session->userdata('cookie')){
+        if ((!$this->session->userdata('cookie') && $this->session->userdata('online')) || !$this->session->userdata('user_id')){
             header("Content-type: text/html; charset=utf-8");
             echo '<script>alert("抱歉，您的权限不足或登录信息已过期");window.location.href="' . base_url() . '";</script>';            
             return 0;
@@ -28,7 +28,9 @@ class Control_center extends CI_Controller{
         
         $role_id = $this->authorizee->getAuthorizeeId($this->session->userdata('user_id'));
         
-        $this->load->view('control_center_view', array('user_name' => $this->session->userdata('user_name')));
+        $this->load->view('control_center_view', array('user_name' => $this->session->userdata('user_name'), 
+            'online' => $this->session->userdata('online'), 'user_id' => $this->session->userdata('user_id'), 
+            'role_index' => $this->session->userdata('role_index')));
     }
     
     //显示教师信息

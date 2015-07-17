@@ -390,7 +390,8 @@ FILESUCCESS;
         $this->load->library('session');
         $this->load->model('record_model');
         
-        $end_year_term_no = $year_term_no + 1;
+        if ($this->session->userdata('online')){
+            $end_year_term_no = $year_term_no + 1;
         
         
         //cURL请求
@@ -436,6 +437,10 @@ FILESUCCESS;
                 $i += 5;
             }
         }
+        } else {
+            
+        }
+        
         
         //还原真实查询起始年份($i - BASIC_TERM_ID) * 2 + 1
         $term_year = ($year_term_no - 1) / 2 + BASIC_TERM_ID;
@@ -711,7 +716,7 @@ FILESUCCESS;
         $clean['file_name'] = $student_info['school_name'] . '-' . $student_info['class_name'] . '-' . $clean['ByStudentNO'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细.xls';
     
         
-        $objPHPExcel->getProperties()->setCreator('SUTACM *Chen')
+        $objPHPExcel->getProperties()->setCreator('SUTACM *Chen Lin')
             ->setTitle($student_info['school_name'] . '-' . $student_info['class_name'] . '-' . $clean['ByStudentNO'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细');
 
         $objPHPExcel->getActiveSheet()->setCellValue('A1', '姓名');
@@ -925,7 +930,7 @@ FILESUCCESS;
         
         $clean['file_name'] = $class_info['school_name'] . '-' . $class_info['class_name'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细.xls';
         
-        $objPHPExcel->getProperties()->setCreator('SUTACM *Chen')
+        $objPHPExcel->getProperties()->setCreator('SUTACM *Chen Lin')
             ->setTitle($class_info['school_name'] . '-' . $class_info['class_name'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细');
 
         

@@ -22,9 +22,9 @@ class Search extends CI_Controller{
      *  显示学生信息查询界面    
      *  @Method Name:
      *  showSearchStudent()    
-     *  @Parameter: 
+     *  @parameter: test
      *     
-     *  @Return: 
+     *  @return: test
      *  
     */
     public function showSearchStudent(){

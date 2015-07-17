@@ -32,7 +32,7 @@ class Right extends CI_Controller{
         $this->load->library('authorizee');
         $this->load->model('right_model');
         
-        if (!$this->session->userdata('cookie')){
+        if ((!$this->session->userdata('cookie') && $this->session->userdata('online')) || !$this->session->userdata('user_id')){
             header("Content-type: text/html; charset=utf-8");
             echo '<script>alert("抱歉，您的登录信息已过期");window.parent.location.href="' . base_url() . '";</script>';            
             return 0;
@@ -45,8 +45,8 @@ class Right extends CI_Controller{
         }
         
         $list = array();
-        if ($this->session->userdata('role_id')){
-            $list = $this->right_model->getRightList($this->session->userdata('role_id'));
+        if ($role_id = $this->authorizee->getRoleId($this->session->userdata('role_index'))){
+            $list = $this->right_model->getRightList($role_id);
         }
         
         
@@ -71,7 +71,7 @@ class Right extends CI_Controller{
         $this->load->library('session');
         $this->load->library('authorizee');
         $this->load->model('right_model');
-        if (!$this->session->userdata('cookie')){
+        if ((!$this->session->userdata('cookie') && $this->session->userdata('online')) || !$this->session->userdata('user_id')){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的登录信息已过期,请重新登录'));
             return 0;
         }
@@ -82,9 +82,8 @@ class Right extends CI_Controller{
         
         $data = array();
         
-        if (!$this->input->post('right_teacher_id', TRUE) || !ctype_digit($this->input->post('right_teacher_id', TRUE))
-                || strlen($this->input->post('right_teacher_id', TRUE)) != 5){
-            echo json_encode(array('code' => -2, 'message' => '抱歉，教师id为数字且不能为空或大于5位'));
+        if (!$this->input->post('right_teacher_id', TRUE) || !ctype_digit($this->input->post('right_teacher_id', TRUE)) || 9 < strlen($this->input->post('right_teacher_id', TRUE))){
+            echo json_encode(array('code' => -2, 'message' => '抱歉，教师或学生id需要为数字'));
             return 0;
         } else {
             $data['user_id'] = $this->input->post('right_teacher_id', TRUE);
@@ -98,6 +97,8 @@ class Right extends CI_Controller{
             $data['role_id'] = $this->input->post('right_set_form_type', TRUE);
         }
         
+        var_dump($data);
+        exit();
         if ($this->right_model->setUserRole($data)){
             echo json_encode(array('code' => 1));
             return 0;
