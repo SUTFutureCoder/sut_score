@@ -243,4 +243,22 @@ class Record_model extends CI_Model{
         $this->db->update('score_log', array('score_log_valid' => 0));
         return $this->db->affected_rows();
     }
+    
+    /**    
+     *  @Purpose:    
+     *  获取班级学生列表
+     *  @Method Name:
+     *  getStudentListById($class_id)
+     *  @Parameter: 
+     *  int $class_id 班级id
+     * 
+     *  @Return: 
+     * array
+    */
+    public function getStudentListById($class_id){
+        $this->load->database();
+        $this->db->where('student_class', $class_id);
+        $result = $this->db->get('student');
+        return $result->result_array();
+    }
 }

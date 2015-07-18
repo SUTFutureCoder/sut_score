@@ -247,6 +247,7 @@
                     class_id        : $("#form_search_class").val(),
                 },
                 function (result){
+                    console.log(result);
                     var result = JSON.parse(result);
                     switch (result['code'])
                     {

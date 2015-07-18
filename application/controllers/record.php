@@ -285,14 +285,23 @@ FILESUCCESS;
         $this->load->model('search_model');
         $this->load->model('record_model');
         
-        if (strlen($this->session->userdata('user_id')) != 5){
-            echo json_encode(array('code' => -1, 'message' => '抱歉您的权限不足'));
-            return 0;
-        }
-        
         if ((!$this->session->userdata('cookie') && $this->session->userdata('online')) || !$this->session->userdata('user_id')){
             echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
             return 0;
+        }
+        
+        //只能读取自己的记录的情况：1.权限为write_person 2.权限为readonly
+        if (in_array($this->session->userdata('role_index'), array('write_person', 'readonly')) &&
+                $this->input->post('student_id', TRUE) != $this->session->userdata('user_id')){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您只能读取自己的信息'));
+            return 0;
+        }
+        
+        //关闭curl的情况：1.离线模式必须 2.在教务处无请求权限 
+        if (!$this->session->userdata('online') || 5 != strlen($this->session->userdata('user_id'))){
+            $curl = 0;
+        } else {
+            $curl = 1;
         }
         
         if (!$this->input->post('student_term_id', TRUE) || !ctype_digit($this->input->post('student_term_id', TRUE))){
@@ -318,7 +327,7 @@ FILESUCCESS;
             return 0;
         }
         
-        $data = $this->getStudentScore($clean['YearTermNO'], $class, $clean['ByStudentNO']);
+        $data = $this->getStudentScore($clean['YearTermNO'], $class, $clean['ByStudentNO'], $curl);
         
         echo json_encode(array('code' => 1, 'data' => $data));
         return 0;
@@ -342,13 +351,19 @@ FILESUCCESS;
         $this->load->model('search_model');
         $this->load->model('record_model');
         
-        if (strlen($this->session->userdata('user_id')) != 5){
-            echo json_encode(array('code' => -1, 'message' => '抱歉您的权限不足'));
+        if ((!$this->session->userdata('cookie') && $this->session->userdata('online')) || !$this->session->userdata('user_id')){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您的登录信息已过期'));
             return 0;
         }
         
-        if ((!$this->session->userdata('cookie') && $this->session->userdata('online')) || !$this->session->userdata('user_id')){
-            echo json_encode(array('code' => -1, 'message' => '抱歉，您的权限不足或登录信息已过期'));
+        if (!$this->session->userdata('online') || 5 != strlen($this->session->userdata('user_id'))){
+            $curl = 0;
+        } else {
+            $curl = 1;
+        }
+        
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin', 'write_all'))){
+            echo json_encode(array('code' => -1, 'message' => '抱歉，您没有查询权限'));
             return 0;
         }
         
@@ -366,7 +381,7 @@ FILESUCCESS;
            $class = $this->input->post('class_id', TRUE);
         }
         
-        $data = $this->getClassScore($clean['YearTermNO'], $class, 'score');
+        $data = $this->getClassScore($clean['YearTermNO'], $class, 'score', $curl);
         echo json_encode(array('code' => 1, 'data' => $data));
         return 0;
     }
@@ -381,82 +396,82 @@ FILESUCCESS;
      *  int $year_term_no   起始学期id
      *  int $class          班级id
      *  int $student_no     学生id
+     *  bool $curl          远程抓取开关【如关，则不抓取智育基本分】
      * 
      *  @Return: 
      *  array $data         积分明细
     */ 
-    private function getStudentScore($year_term_no, $class, $student_no){
+    private function getStudentScore($year_term_no, $class, $student_no, $curl){
         $this->load->library('session');
         $this->load->model('record_model');
-        
-        if ($this->session->userdata('online')){
+         
+        if ($curl){
+            //获取学生权限的成绩列表以后会加上
             $end_year_term_no = $year_term_no + 1;
         
-        
-        //cURL请求
-        $url = BASE_SCHOOL_URL . 'ACTIONCLASSJDQUERY.APPPROCESS?mode=2&query=1&xuanzelei=总成绩';
-        
-        $ch = curl_init();
-        $postField = 'FirstYearTermNO=' . $year_term_no . '&EndYearTermNO=' . $end_year_term_no . '&xuanze=1&ClassNO=' . $class;
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postField);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        $result = curl_exec($ch);
-        curl_close($ch);
-        $result = iconv('gb2312', 'utf-8//IGNORE', $result);
-        $result = explode("\n", strip_tags($result));
-        
-        
-        $result_count = count($result) - 14;
-        $average_point = array();
-        $n = 0;
-        
-        for ($i = 84; $i < $result_count; $i++, $n++){
-            while (trim($result[$i]) == ''){
-                $i++;
-            }        
-            if (trim($result[++$i]) == $student_no){
-                $i += 6;
+            //cURL请求
+            $url = BASE_SCHOOL_URL . 'ACTIONCLASSJDQUERY.APPPROCESS?mode=2&query=1&xuanzelei=总成绩';
+
+            $ch = curl_init();
+            $postField = 'FirstYearTermNO=' . $year_term_no . '&EndYearTermNO=' . $end_year_term_no . '&xuanze=1&ClassNO=' . $class;
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $postField);
+            curl_setopt($ch, CURLOPT_HEADER, 0);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            $result = curl_exec($ch);
+            curl_close($ch);
+            $result = iconv('gb2312', 'utf-8//IGNORE', $result);
+            $result = explode("\n", strip_tags($result));
+
+
+            $result_count = count($result) - 14;
+            $average_point = array();
+            $n = 0;
+
+            for ($i = 84; $i < $result_count; $i++, $n++){
                 while (trim($result[$i]) == ''){
                     $i++;
-                }      
-                //记录平均绩点
-                $student_point = trim($result[$i]);
-                //计算绩点对应智育基础分    60+(x-2.0)/0.2
-                $z_basic_score = (60 + ($student_point - 2.0) / 0.2) * 0.7;
-                break;
-            } else {
-                $i += 7;
-                while (trim($result[$i]) == ''){
-                    $i++;
-                }      
-                $i += 5;
+                }        
+                if (trim($result[++$i]) == $student_no){
+                    $i += 6;
+                    while (trim($result[$i]) == ''){
+                        $i++;
+                    }      
+                    //记录平均绩点
+                    $student_point = trim($result[$i]);
+                    //计算绩点对应智育基础分    60+(x-2.0)/0.2
+                    $z_basic_score = (60 + ($student_point - 2.0) / 0.2) * 0.7;
+                    break;
+                } else {
+                    $i += 7;
+                    while (trim($result[$i]) == ''){
+                        $i++;
+                    }      
+                    $i += 5;
+                }
             }
-        }
-        } else {
-            
-        }
-        
-        
+        }    
         //还原真实查询起始年份($i - BASIC_TERM_ID) * 2 + 1
         $term_year = ($year_term_no - 1) / 2 + BASIC_TERM_ID;
         $data['data'] = $this->record_model->getStudentScoreList($term_year, $student_no);
-        array_unshift($data['data'], array(
-            'score_type_id' => 'z_1_1_1',
-            'score_log_judge' => $z_basic_score,
-            'score_type_content' => '智育基础分',
-            'score_log_add_time' => date('Y-m-d H:i:s'),
-            'score_log_event_time' => $term_year . '-' . ($term_year + 1) . '年度',
-            'score_log_event_intro' => '',
-            'score_log_event_certify' => '教务处',
-            'score_log_event_file' => '',
-            'score_log_valid' => 1,
-            'score_log_event_tag' => '',
-            'teacher_name' => '自动获取',
-        ));
+        
+        if ($curl){
+            array_unshift($data['data'], array(
+                'score_type_id' => 'z_1_1_1',
+                'score_log_judge' => $z_basic_score,
+                'score_type_content' => '智育基础分',
+                'score_log_add_time' => date('Y-m-d H:i:s'),
+                'score_log_event_time' => $term_year . '-' . ($term_year + 1) . '年度',
+                'score_log_event_intro' => '',
+                'score_log_event_certify' => '教务处',
+                'score_log_event_file' => '',
+                'score_log_valid' => 1,
+                'score_log_event_tag' => '',
+                'teacher_name' => '自动获取',
+            ));
+        }
         
         $data['score']['sum'] = 0.000;
         $data['score']['d_sum'] = 0.000;
@@ -526,77 +541,88 @@ FILESUCCESS;
      *  int $year_term_no   起始学期id
      *  int $class          班级id
      *  char $mode          模式【score/all】
+     *  bool $curl          远程抓取开关
      *  @Return: 
      *  array $data         积分明细
     */ 
-    private function getClassScore($year_term_no, $class, $mode = 'score'){
+    private function getClassScore($year_term_no, $class, $mode = 'score', $curl){
         $this->load->library('session');
         $this->load->model('record_model');
-        $end_year_term_no = $year_term_no + 1;
         
-        //cURL请求
-        $url = BASE_SCHOOL_URL . 'ACTIONCLASSJDQUERY.APPPROCESS?mode=2&query=1&xuanzelei=总成绩';
+        if ($curl){
+            //这个可以不用继续开发，因为普通用户无法获取全班的信息
+            $end_year_term_no = $year_term_no + 1;
         
-        $ch = curl_init();
-        $postField = 'FirstYearTermNO=' . $year_term_no . '&EndYearTermNO=' . $end_year_term_no . '&xuanze=1&ClassNO=' . $class;
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postField);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        $result = curl_exec($ch);
-        curl_close($ch);
-        $result = iconv('gb2312', 'utf-8//IGNORE', $result);
-        $result = explode("\n", strip_tags($result));
-        
-        
-        $result_count = count($result) - 14;
-        $average_point = array();
-        $n = 0;
-        
-        for ($i = 84; $i < $result_count; $i++, $n++){
-            while (trim($result[$i]) == ''){
-                $i++;
-            }                   
-            $average_point[$n]['student_id'] = trim($result[++$i]);
-            $average_point[$n]['student_name'] = trim($result[++$i]);
-            $i += 5;
-            while (trim($result[$i]) == ''){
-                $i++;
-            }      
-            $average_point[$n]['average_point'] = trim($result[$i]);
-            //计算绩点对应智育基础分    60+(x-2.0)/0.2
-            $average_point[$n]['z_basic_score'] = (60 + ($average_point[$n]['average_point'] - 2.0) / 0.2) * 0.7;
-            $i += 5;
+            //cURL请求
+            $url = BASE_SCHOOL_URL . 'ACTIONCLASSJDQUERY.APPPROCESS?mode=2&query=1&xuanzelei=总成绩';
+
+            $ch = curl_init();
+            $postField = 'FirstYearTermNO=' . $year_term_no . '&EndYearTermNO=' . $end_year_term_no . '&xuanze=1&ClassNO=' . $class;
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Cookie:' . $this->session->userdata('cookie')));
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $postField);
+            curl_setopt($ch, CURLOPT_HEADER, 0);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            $result = curl_exec($ch);
+            curl_close($ch);
+            $result = iconv('gb2312', 'utf-8//IGNORE', $result);
+            $result = explode("\n", strip_tags($result));
+
+
+            $result_count = count($result) - 14;
+            $average_point = array();
+            $n = 0;
+
+            for ($i = 84; $i < $result_count; $i++, $n++){
+                while (trim($result[$i]) == ''){
+                    $i++;
+                }                   
+                $average_point[$n]['student_id'] = trim($result[++$i]);
+                $average_point[$n]['student_name'] = trim($result[++$i]);
+                $i += 5;
+                while (trim($result[$i]) == ''){
+                    $i++;
+                }      
+                $average_point[$n]['average_point'] = trim($result[$i]);
+                //计算绩点对应智育基础分    60+(x-2.0)/0.2
+                $average_point[$n]['z_basic_score'] = (60 + ($average_point[$n]['average_point'] - 2.0) / 0.2) * 0.7;
+                $i += 5;
+            }
+        } else {
+            $average_point = $this->record_model->getStudentListById($class);
         }
         
         $data = array();
         //还原真实查询起始年份($i - BASIC_TERM_ID) * 2 + 1
         $term_year = ($year_term_no - 1) / 2 + BASIC_TERM_ID;
+        
         foreach ($average_point as $average_point_item){
             $data[$average_point_item['student_id']]['name'] = $average_point_item['student_name'];
             $data[$average_point_item['student_id']]['data'] = $this->record_model->getStudentScoreList($term_year, $average_point_item['student_id'], $mode);
             if ($mode == 'all'){
-                array_unshift($data[$average_point_item['student_id']]['data'], array(
-                    'score_type_id' => 'z_1_1_1',
-                    'score_log_judge' => $average_point_item['z_basic_score'],
-                    'score_type_content' => '智育基础分',
-                    'score_log_add_time' => date('Y-m-d H:i:s'),
-                    'score_log_event_time' => $term_year . '-' . ($term_year + 1) . '年度',
-                    'score_log_event_intro' => '',
-                    'score_log_event_certify' => '教务处',
-                    'score_log_event_file' => '',
-                    'score_log_valid' => 1,
-                    'score_log_event_tag' => '',
-                    'teacher_name' => '自动获取',
-                ));
-                
+                if ($curl){
+                    array_unshift($data[$average_point_item['student_id']]['data'], array(
+                        'score_type_id' => 'z_1_1_1',
+                        'score_log_judge' => $average_point_item['z_basic_score'],
+                        'score_type_content' => '智育基础分',
+                        'score_log_add_time' => date('Y-m-d H:i:s'),
+                        'score_log_event_time' => $term_year . '-' . ($term_year + 1) . '年度',
+                        'score_log_event_intro' => '',
+                        'score_log_event_certify' => '教务处',
+                        'score_log_event_file' => '',
+                        'score_log_valid' => 1,
+                        'score_log_event_tag' => '',
+                        'teacher_name' => '自动获取',
+                    ));
+                }
             } else if($mode == 'score'){
-                array_unshift($data[$average_point_item['student_id']]['data'], array(
-                    'score_log_judge' => $average_point_item['z_basic_score'],
-                    'score_type_id' => 'z_1_1_1'
-                ));
+                if ($curl){
+                    array_unshift($data[$average_point_item['student_id']]['data'], array(
+                        'score_log_judge' => $average_point_item['z_basic_score'],
+                        'score_type_id' => 'z_1_1_1'
+                    ));
+                }
             }
  
             $data[$average_point_item['student_id']]['score']['sum'] = 0.000;
@@ -672,15 +698,23 @@ FILESUCCESS;
         $this->load->library('PHPExcel');
         $this->load->model('search_model');
         
-        if (strlen($this->session->userdata('user_id')) != 5){
-            echo '<script>alert("抱歉，抱歉您的权限不足");</script>';
-            return 0;
-        }
-        
         $excel = new PHPExcel();
         $clean = array();
         if ((!$this->session->userdata('cookie') && $this->session->userdata('online')) || !$this->session->userdata('user_id')){
             echo '<script>alert("抱歉，您的登录信息已过期,请重新登录");window.parent.parent.location.href="' . base_url() . '";</script>';            
+            return 0;
+        }
+        
+        if (!$this->session->userdata('online') || 5 != strlen($this->session->userdata('user_id'))){
+            $curl = 0;
+        } else {
+            $curl = 1;
+        }
+        
+        
+        if (in_array($this->session->userdata('role_index'), array('write_person', 'readonly')) &&
+                $this->input->get('student_id', TRUE) != $this->session->userdata('user_id')){
+            echo '<script>alert("抱歉，您只能读取自己的信息");</script>';      
             return 0;
         }
         
@@ -707,7 +741,7 @@ FILESUCCESS;
             return 0;
         }
         
-        $data = $this->getStudentScore($clean['YearTermNO'], $student_info['student_class'], $clean['ByStudentNO']);
+        $data = $this->getStudentScore($clean['YearTermNO'], $student_info['student_class'], $clean['ByStudentNO'], $curl);
         
         $objPHPExcel = new PHPExcel();
         $objWriter = new PHPExcel_Writer_Excel5($objPHPExcel);     
@@ -718,7 +752,12 @@ FILESUCCESS;
         $objPHPExcel->getProperties()->setCreator('SUTACM *Chen Lin')
             ->setTitle($student_info['school_name'] . '-' . $student_info['class_name'] . '-' . $clean['ByStudentNO'] . '-' . $term_year . '-' . ($term_year + 1) . '年度德智体综合积分明细');
 
-        $objPHPExcel->getActiveSheet()->setCellValue('A1', '姓名');
+        if ($curl){
+            $objPHPExcel->getActiveSheet()->setCellValue('A1', '姓名');
+        } else {
+            $objPHPExcel->getActiveSheet()->setCellValue('A1', '[无智育基础分版]姓名');
+        }
+        
         $objPHPExcel->getActiveSheet()->getStyle('A1')->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
         $objPHPExcel->getActiveSheet()->getStyle('A1')->getFont()->setBold(true);
         
@@ -888,15 +927,23 @@ FILESUCCESS;
         $this->load->library('session');
         $this->load->library('PHPExcel');
         $this->load->model('search_model');
-        if (strlen($this->session->userdata('user_id')) != 5){
-            echo '<script>alert("抱歉，抱歉您的权限不足");</script>';
-            return 0;
-        }
-        
+                
         $excel = new PHPExcel();
         $clean = array();
         if ((!$this->session->userdata('cookie') && $this->session->userdata('online')) || !$this->session->userdata('user_id')){
             echo '<script>alert("抱歉，您的登录信息已过期,请重新登录");window.parent.parent.location.href="' . base_url() . '";</script>';            
+            return 0;
+        }
+        
+        if (!$this->session->userdata('online') || 5 != strlen($this->session->userdata('user_id'))){
+            $curl = 0;
+        } else {
+            $curl = 1;
+        }
+        
+        
+        if (!in_array($this->session->userdata('role_index'), array('god', 'admin', 'write_all'))){
+            echo '<script>alert("抱歉，您没有查询权限");</script>';      
             return 0;
         }
         
@@ -922,7 +969,7 @@ FILESUCCESS;
             return 0;
         }
         
-        $data = $this->getClassScore($clean['YearTermNO'], $clean['class_id'], 'all');
+        $data = $this->getClassScore($clean['YearTermNO'], $clean['class_id'], 'all', $curl);
         
         $objPHPExcel = new PHPExcel();
         $objWriter = new PHPExcel_Writer_Excel5($objPHPExcel);     
