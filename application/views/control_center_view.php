@@ -68,7 +68,11 @@
             <div id="tabs" class="easyui-tabs"  fit="true" border="false" >
                 <div title="Home">
                     <div class="cs-home-remark">
+                        <?php if ($online): ?>
+                        <h1>德智体综合积分测评控制面板</h1> <br>
+                        <?php else: ?>
                         <h1>德智体综合积分测评控制面板[离线版]</h1> <br>
+                        <?php endif; ?>
                         <h2>Shenyang University Of Technology </h2><br/>
                         Copyright 2015.05-<?=  date("Y") . '.' . date('m')?> SUT ACM/NWS<br/> 
                         Powered By *Chen Lin 保留著作权<br/>
